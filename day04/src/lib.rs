@@ -101,3 +101,44 @@ MXMXAXMASX
 ";
     assert_eq!(part1(input), 18);
 }
+
+pub fn part2(input: &str) -> u32 {
+    const M_AND_S: u8 = b'M' + b'S';
+    let mut grid: Vec<Vec<u8>> = vec![];
+    for line in input.lines() {
+        grid.push(line.bytes().collect());
+    }
+    assert_eq!(grid.len(), grid[0].len());
+    let dimension = grid.len();
+
+    let mut result = 0;
+    for row in 1..dimension-1 {
+        for col in 1..dimension-1 {
+            if grid[row][col] == b'A' &&
+               (grid[row-1][col-1] + grid[row+1][col+1]) == M_AND_S &&
+               (grid[row-1][col+1] + grid[row+1][col-1]) == M_AND_S
+            {
+                result += 1;
+            }
+        }
+    }
+    
+    result
+}
+
+#[test]
+fn test_part2() {
+    let input = "\
+MMMSXXMASM
+MSAMXMSMSA
+AMXSXMAAMM
+MSAMASMSMX
+XMASAMXAMM
+XXAMMXXAMA
+SMSMSASXSS
+SAXAMASAAA
+MAMMMXMMMM
+MXMXAXMASX
+";
+    assert_eq!(part2(input), 9);
+}
