@@ -41,7 +41,6 @@ pub fn part2(input: &str) -> u32 {
 
     while !remaining.is_empty() {
         if let Ok((r, (a,b))) = mul_instruction(remaining) {
-            eprintln!("mul(): {a} {b}{}", if enabled { "" } else { " (disabled)"});
             remaining = r;
             if enabled {
                 result += a * b;
