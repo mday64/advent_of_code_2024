@@ -31,7 +31,7 @@ pub fn part1(input: &str) -> u32 {
             window.rotate_left(1);
             window[3] = ch;
             if window == forwards || window == backwards {
-                eprintln!("Horizontal (starting row={} col={}", row, col-3);
+                // eprintln!("Horizontal (starting row={} col={}", row, col-3);
                 result += 1;
             }
         }
@@ -45,7 +45,7 @@ pub fn part1(input: &str) -> u32 {
             window.rotate_left(1);
             window[3] = ch;
             if window == forwards || window == backwards {
-                eprintln!("Vertical (ending row={} col={}", row-3, col);
+                // eprintln!("Vertical (ending row={} col={}", row-3, col);
                 result += 1;
             }
         }
@@ -62,7 +62,7 @@ pub fn part1(input: &str) -> u32 {
                 window[i] = grid[row+i][col+i];
             }
             if window == forwards || window == backwards {
-                eprintln!("Diagonal1 (starting row={} col={}", row, col);
+                // eprintln!("Diagonal1 (starting row={} col={}", row, col);
                 result += 1;
             }
         }
@@ -76,7 +76,7 @@ pub fn part1(input: &str) -> u32 {
                 window[i] = grid[row+i][col-i];
             }
             if window == forwards || window == backwards {
-                eprintln!("Diagonal2 (starting row={} col={}", row, col);
+                // eprintln!("Diagonal2 (starting row={} col={}", row, col);
                 result += 1;
             }
         }
@@ -141,4 +141,44 @@ MAMMMXMMMM
 MXMXAXMASX
 ";
     assert_eq!(part2(input), 9);
+}
+
+pub fn part2_ndarray(input: &str) -> u32 {
+    use ndarray::ArrayView;
+    const M_AND_S: u8 = b'M' + b'S';
+
+    let dimension = input.find('\n').unwrap();
+    assert_eq!(input.len(), dimension * (dimension + 1));
+    let grid = ArrayView::from_shape((dimension, dimension+1), input.as_bytes()).unwrap();
+
+    let mut result = 0;
+    for row in 1..dimension-1 {
+        for col in 1..dimension-1 {
+            if grid[[row, col]] == b'A' &&
+               (grid[[row-1, col-1]] + grid[[row+1, col+1]]) == M_AND_S &&
+               (grid[[row-1, col+1]] + grid[[row+1, col-1]]) == M_AND_S
+            {
+                result += 1;
+            }
+        }
+    }
+    
+    result
+}
+
+#[test]
+fn test_part2_ndarray() {
+    let input = "\
+MMMSXXMASM
+MSAMXMSMSA
+AMXSXMAAMM
+MSAMASMSMX
+XMASAMXAMM
+XXAMMXXAMA
+SMSMSASXSS
+SAXAMASAAA
+MAMMMXMMMM
+MXMXAXMASX
+";
+    assert_eq!(part2_ndarray(input), 9);
 }
