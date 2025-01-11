@@ -8,3 +8,23 @@
 * Write an `ignore_till` parser, based on `many_till`, that skips over input
     until the given parser matches.
 * Write a state machine to do the parsing and state to compute results.
+
+## Day 4
+### Part 1
+* Use `ndarray` instead of `Vec<Vec<char>>` to access the input.
+* Figure out how to find all of the (non-overlapping) diagonals, and window
+  through them in the same way as for horizontal and vertical.  I think you
+  start on the left edge, going up, then top edge, going right.
+* (Advanced) Since we're looking for a 4-byte pattern, we can represent 4
+  consecutive letters as a single u32.  We can pre-compute 4-character
+  sequences by doing numeric array operations on suitably shifted variants
+  of the input.
+
+  For example, a horizontal pattern could be something like:
+    array << 24 + array.offset_by(1) << 16 + array.offset_by(2) << 8 + array.offset_by(3)
+  
+  Then just search for the equivalent of 'XMAS' or 'SAMX', and count them.
+
+  Those array operations are potentially vectorizable (although alignment could
+  be a problem).
+  
