@@ -1,3 +1,4 @@
 [workspace]
+exclude = [ "_template" ]
 members = [ "day*" ]
 resolver = "2"
