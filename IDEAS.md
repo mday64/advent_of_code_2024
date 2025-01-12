@@ -28,3 +28,6 @@
   Those array operations are potentially vectorizable (although alignment could
   be a problem).
   
+  # Day 5
+  * Parts 1 and 2 could be computed in a single pass, doing almost the same work
+    as part 2 alone.

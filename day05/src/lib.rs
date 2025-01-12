@@ -83,3 +83,95 @@ fn test_part1() {
 ";
     assert_eq!(part1(input), 143);
 }
+
+//
+// Sort the list of page numbers based on the given sorting rules.
+// Returns true if the list was modified.
+//
+fn sort_pages(pages: &mut[u32], is_sorted: &HashMap<(u32, u32), bool>) -> bool {
+    let mut result = false;
+    let mut changed = true;
+
+    // A simple, poorly optimized, bubble sort
+    while changed {
+        changed = false;
+        for i in 1..pages.len() {
+            let left = pages[i-1];
+            let right = pages[i];
+            if !is_sorted.get(&(left, right)).unwrap() {
+                changed = true;
+                result = true;
+                pages.swap(i-1, i);
+            }
+        }
+    }
+
+    result
+}
+
+pub fn part2(input: &str) -> u32 {
+    let mut result = 0;
+    let (rules, updates) = input.split_once("\n\n").unwrap();
+
+    // Parse the ordering rules
+    let mut is_sorted = HashMap::<(u32, u32), bool>::new();
+    for line in rules.lines() {
+        if line.is_empty() { break; }
+        let (left, right) = line.split_once('|').unwrap();
+        let left: u32 = left.parse().unwrap();
+        let right: u32 = right.parse().unwrap();
+        is_sorted.insert((left, right), true);
+        is_sorted.insert((right, left), false);
+    }
+
+    // Parse the lists of numbers
+    for line in updates.lines() {
+        // dbg!(line);
+        let mut pages = line.split(',').map(|word| word.parse::<u32>().unwrap()).collect_vec();
+        if sort_pages(&mut pages, &is_sorted) {
+            // They were not in sorted order, so add the new middle element to result
+            // dbg!(&pages);
+            result += pages[pages.len()/2]
+        }
+    }
+
+    //      If the list is sorted, then:
+    //          add its middle element to the result
+    result
+}
+
+
+#[test]
+fn test_part2() {
+    let input = "\
+47|53
+97|13
+97|61
+97|47
+75|29
+61|13
+75|53
+29|13
+97|29
+53|29
+61|53
+97|53
+61|29
+47|13
+75|47
+97|75
+47|61
+75|61
+47|29
+75|13
+53|13
+
+75,47,61,53,29
+97,61,53,29,13
+75,29,13
+75,97,47,61,53
+61,13,29
+97,13,75,29,47
+";
+    assert_eq!(part2(input), 123);
+}
