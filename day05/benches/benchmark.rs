@@ -1,4 +1,4 @@
-use day05::{ part1, part2, both_parts };
+use day05::{ part1, part2, both_parts, both_parts_faster };
 
 fn main() {
     divan::main();
@@ -19,4 +19,9 @@ fn bench_part2() {
 #[divan::bench]
 fn bench_both_parts() {
     both_parts(INPUT);
+}
+
+#[divan::bench]
+fn bench_both_parts_faster() {
+    both_parts_faster(INPUT);
 }

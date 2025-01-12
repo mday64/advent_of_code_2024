@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{cmp::Ordering, collections::HashMap};
 
 use itertools::Itertools;
 
@@ -239,4 +239,84 @@ fn test_both_parts() {
 97,13,75,29,47
 ";
     assert_eq!(both_parts(input), (143, 123));
+}
+
+
+pub fn both_parts_faster(input: &str) -> (u32, u32) {
+    let mut part1 = 0;
+    let mut part2 = 0;
+    let (rules, updates) = input.split_once("\n\n").unwrap();
+
+    // Parse the ordering rules
+    let mut is_sorted = HashMap::<(u32, u32), bool>::new();
+    for line in rules.lines() {
+        if line.is_empty() { break; }
+        let (left, right) = line.split_once('|').unwrap();
+        let left: u32 = left.parse().unwrap();
+        let right: u32 = right.parse().unwrap();
+        is_sorted.insert((left, right), true);
+        is_sorted.insert((right, left), false);
+    }
+
+    let compare_pages = |left: &u32, right: &u32| -> Ordering{
+        if left == right {
+            Ordering::Equal
+        } else if *is_sorted.get(&(*left, *right)).unwrap() {
+                Ordering::Less
+        } else {
+            Ordering::Greater
+        }
+    };
+
+    // Parse the lists of numbers
+    for line in updates.lines() {
+        // dbg!(line);
+        let mut pages = line.split(',').map(|word| word.parse::<u32>().unwrap()).collect_vec();
+        if pages.is_sorted_by(|left, right| *is_sorted.get(&(*left, *right)).unwrap()) {
+            // They were not in sorted order, so add the new middle element to result
+            // dbg!(&pages);
+            part1 += pages[pages.len()/2]
+        } else {
+            pages.sort_by(compare_pages);
+            part2 += pages[pages.len()/2]
+        }
+    }
+
+    (part1, part2)
+}
+
+
+#[test]
+fn test_both_parts_faster() {
+    let input = "\
+47|53
+97|13
+97|61
+97|47
+75|29
+61|13
+75|53
+29|13
+97|29
+53|29
+61|53
+97|53
+61|29
+47|13
+75|47
+97|75
+47|61
+75|61
+47|29
+75|13
+53|13
+
+75,47,61,53,29
+97,61,53,29,13
+75,29,13
+75,97,47,61,53
+61,13,29
+97,13,75,29,47
+";
+    assert_eq!(both_parts_faster(input), (143, 123));
 }
