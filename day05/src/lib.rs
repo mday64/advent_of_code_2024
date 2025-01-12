@@ -135,11 +135,8 @@ pub fn part2(input: &str) -> u32 {
         }
     }
 
-    //      If the list is sorted, then:
-    //          add its middle element to the result
     result
 }
-
 
 #[test]
 fn test_part2() {
@@ -174,4 +171,72 @@ fn test_part2() {
 97,13,75,29,47
 ";
     assert_eq!(part2(input), 123);
+}
+
+pub fn both_parts(input: &str) -> (u32, u32) {
+    let mut part1 = 0;
+    let mut part2 = 0;
+    let (rules, updates) = input.split_once("\n\n").unwrap();
+
+    // Parse the ordering rules
+    let mut is_sorted = HashMap::<(u32, u32), bool>::new();
+    for line in rules.lines() {
+        if line.is_empty() { break; }
+        let (left, right) = line.split_once('|').unwrap();
+        let left: u32 = left.parse().unwrap();
+        let right: u32 = right.parse().unwrap();
+        is_sorted.insert((left, right), true);
+        is_sorted.insert((right, left), false);
+    }
+
+    // Parse the lists of numbers
+    for line in updates.lines() {
+        // dbg!(line);
+        let mut pages = line.split(',').map(|word| word.parse::<u32>().unwrap()).collect_vec();
+        if sort_pages(&mut pages, &is_sorted) {
+            // They were not in sorted order, so add the new middle element to result
+            // dbg!(&pages);
+            part2 += pages[pages.len()/2]
+        } else {
+            part1 += pages[pages.len()/2]
+        }
+    }
+
+    (part1, part2)
+}
+
+
+#[test]
+fn test_both_parts() {
+    let input = "\
+47|53
+97|13
+97|61
+97|47
+75|29
+61|13
+75|53
+29|13
+97|29
+53|29
+61|53
+97|53
+61|29
+47|13
+75|47
+97|75
+47|61
+75|61
+47|29
+75|13
+53|13
+
+75,47,61,53,29
+97,61,53,29,13
+75,29,13
+75,97,47,61,53
+61,13,29
+97,13,75,29,47
+";
+    assert_eq!(both_parts(input), (143, 123));
 }
