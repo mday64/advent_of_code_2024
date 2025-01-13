@@ -16,8 +16,8 @@ impl Direction {
     }
 }
 
-type Row = isize;
-type Col = isize;
+type Row = i16;
+type Col = i16;
 struct Guard {
     row: Row,
     col: Col,
@@ -27,7 +27,7 @@ struct Guard {
 }
 
 impl Guard {
-    fn new(row: isize, col: isize) -> Guard {
+    fn new(row: Row, col: Col) -> Guard {
         Guard { row, col, facing: Direction::Up, starting_row: row, starting_col: col }
     }
 
@@ -67,8 +67,8 @@ impl Guard {
 pub fn part1(input: &str) -> usize {
     let mut obstacles = HashSet::<(Row, Col)>::new();
     let mut guard = (0, 0);
-    let num_rows = input.lines().count() as isize;
-    let num_cols = input.lines().next().unwrap().len() as isize;
+    let num_rows = input.lines().count() as Row;
+    let num_cols = input.lines().next().unwrap().len() as Col;
     for (row, line) in input.lines().enumerate() {
         for (col, ch) in line.chars().enumerate() {
             match ch {
@@ -118,8 +118,8 @@ pub fn part1(input: &str) -> usize {
 pub fn part2(input: &str) -> u32 {
     let mut obstacles = HashSet::<(Row, Col)>::new();
     let mut guard = (0, 0);
-    let num_rows = input.lines().count() as isize;
-    let num_cols = input.lines().next().unwrap().len() as isize;
+    let num_rows = input.lines().count() as Row;
+    let num_cols = input.lines().next().unwrap().len() as Col;
     for (row, line) in input.lines().enumerate() {
         for (col, ch) in line.chars().enumerate() {
             match ch {
@@ -195,6 +195,7 @@ fn test_part2() {
     assert_eq!(part2(input), 6);
 }
 
+#[cfg(test)]
 const INPUT: &str = include_str!("../input.txt");
 
 #[test]

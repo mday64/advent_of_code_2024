@@ -28,6 +28,22 @@
   Those array operations are potentially vectorizable (although alignment could
   be a problem).
   
-  # Day 5
-  * Parts 1 and 2 could be computed in a single pass, doing almost the same work
-    as part 2 alone.
+## Day 5
+* Parts 1 and 2 could be computed in a single pass, doing almost the same work
+  as part 2 alone.
+
+## Day 6
+### Part 2
+Part 2 is really slow (about 1.34 optimized, or almost 20 seconds debug!).
+We need to not test the guard's entire path from original starting position
+for every potential obstacle location.
+
+Changing the Row and Col types to i32 and i16 helped a little.  This may have
+sped up the hash computation.  It would have also reduced the overall size of
+the HashMap's memory usage.
+
+* Look into a cheaper hashing library?
+* Change the structure/size of the hash keys?
+
+* Can we reset the guard's position to just before hitting the new obstacle,
+  and then check for loops?
