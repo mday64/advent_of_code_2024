@@ -62,6 +62,21 @@ impl Guard {
         self.col = self.starting_col;
         self.facing = Direction::Up;
     }
+
+    // Reset the guard to it's position right before moving to a given
+    // location from the given direction.
+    fn reset_before(&mut self, facing: Direction, row: Row, col: Col) {
+        self.facing = facing;
+        self.row = row;
+        self.col = col;
+        // Take a step backwards
+        match facing {
+            Direction::Up => { self.row += 1; }
+            Direction::Right => { self.col -= 1; }
+            Direction::Down => { self.row -= 1; }
+            Direction::Left => {self.col += 1; }
+        }
+    }
 }
 
 pub fn part1(input: &str) -> usize {
@@ -115,7 +130,7 @@ pub fn part1(input: &str) -> usize {
 // after the new turn?) to make sure they are in fact in a loop (and
 // won't exit the grid in a new location).
 //
-pub fn part2(input: &str) -> u32 {
+pub fn part2(input: &str) -> usize {
     let mut obstacles = HashSet::<(Row, Col)>::new();
     let mut guard = (0, 0);
     let num_rows = input.lines().count() as Row;
@@ -132,25 +147,30 @@ pub fn part2(input: &str) -> u32 {
     }
     let mut guard = Guard::new(guard.0, guard.1);
 
-    let mut visited = HashSet::<(Row, Col)>::new();
+    let mut visited = HashSet::<(Direction, (Row, Col))>::new();
     while (0..num_rows).contains(&guard.row) && (0..num_cols).contains(&guard.col) {
-        visited.insert(guard.current_position());
+        visited.insert((guard.facing, guard.current_position()));
         guard.step(&obstacles);
     }
 
     // Try putting an obstacle at each of the visited positions, reset
     // the guard to that position, and see whether they get into a loop.
-    visited.remove(&(guard.starting_row, guard.starting_col));
-    let mut result = 0;
-    for (row, col) in visited.iter() {
+    // Note: we need to remove all instances of the guard at their
+    // starting position, regardless of direction.
+    visited.remove(&(Direction::Up, (guard.starting_row, guard.starting_col)));
+    visited.remove(&(Direction::Right, (guard.starting_row, guard.starting_col)));
+    visited.remove(&(Direction::Down, (guard.starting_row, guard.starting_col)));
+    visited.remove(&(Direction::Left, (guard.starting_row, guard.starting_col)));
+    let mut new_obstacles = HashSet::<(Row, Col)>::new();
+    for (facing, (row, col)) in visited.iter() {
         obstacles.insert((*row, *col));
         let mut visited = HashSet::<(Direction, (Row, Col))>::new();
-        guard.reset();
+        guard.reset_before(*facing, *row, *col);
         while (0..num_rows).contains(&guard.row) && (0..num_cols).contains(&guard.col) {
             if !visited.insert((guard.facing, guard.current_position())) {
                 // Found a loop
                 // dbg!((row, col));
-                result += 1;
+                new_obstacles.insert((*row, *col));
                 break;
             }
             guard.step(&obstacles);
@@ -158,7 +178,7 @@ pub fn part2(input: &str) -> u32 {
         obstacles.remove(&(*row, *col));
     }
 
-    result
+    new_obstacles.len()
 }
 
 #[test]
