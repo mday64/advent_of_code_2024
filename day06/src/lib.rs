@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use rustc_hash::{FxHashMap, FxHashSet};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 enum Direction {
@@ -46,7 +46,7 @@ impl Guard {
 
     // Try to make one step forward.  If there is an obstacle there,
     // then turn instead.
-    fn step(&mut self, obstacles: &HashSet<(Row, Col)>) {
+    fn step(&mut self, obstacles: &FxHashSet<(Row, Col)>) {
         let ahead = self.ahead();
         if obstacles.contains(&ahead) {
             self.facing.turn();
@@ -80,7 +80,7 @@ impl Guard {
 }
 
 pub fn part1(input: &str) -> usize {
-    let mut obstacles = HashSet::<(Row, Col)>::new();
+    let mut obstacles = FxHashSet::<(Row, Col)>::default();
     let mut guard = (0, 0);
     let num_rows = input.lines().count() as Row;
     let num_cols = input.lines().next().unwrap().len() as Col;
@@ -96,7 +96,7 @@ pub fn part1(input: &str) -> usize {
     }
     let mut guard = Guard::new(guard.0, guard.1);
 
-    let mut visited = HashSet::<(Row, Col)>::new();
+    let mut visited = FxHashSet::<(Row, Col)>::default();
     while (0..num_rows).contains(&guard.row) && (0..num_cols).contains(&guard.col) {
         visited.insert(guard.current_position());
         guard.step(&obstacles);
@@ -131,7 +131,7 @@ pub fn part1(input: &str) -> usize {
 // won't exit the grid in a new location).
 //
 pub fn part2(input: &str) -> usize {
-    let mut obstacles = HashSet::<(Row, Col)>::new();
+    let mut obstacles = FxHashSet::<(Row, Col)>::default();
     let mut guard = (0, 0);
     let num_rows = input.lines().count() as Row;
     let num_cols = input.lines().next().unwrap().len() as Col;
@@ -149,7 +149,7 @@ pub fn part2(input: &str) -> usize {
 
     // The value (Direction) is the direction the guard was facing when
     // they first reached the given position.
-    let mut visited = HashMap::<(Row, Col), Direction>::new();
+    let mut visited = FxHashMap::<(Row, Col), Direction>::default();
     while (0..num_rows).contains(&guard.row) && (0..num_cols).contains(&guard.col) {
         visited.entry(guard.current_position()).or_insert(guard.facing);
         guard.step(&obstacles);
@@ -159,10 +159,10 @@ pub fn part2(input: &str) -> usize {
     // the guard to that position, and see whether they get into a loop.
     // Note: we need to remove the guard's initial position.
     visited.remove(&(guard.starting_row, guard.starting_col));
-    let mut new_obstacles = HashSet::<(Row, Col)>::new();
+    let mut new_obstacles = FxHashSet::<(Row, Col)>::default();
     for ((row, col), facing) in visited.iter() {
         obstacles.insert((*row, *col));
-        let mut visited = HashSet::<(Direction, (Row, Col))>::new();
+        let mut visited = FxHashSet::<(Direction, (Row, Col))>::default();
         guard.reset_before(*facing, *row, *col);
         while (0..num_rows).contains(&guard.row) && (0..num_cols).contains(&guard.col) {
             if !visited.insert((guard.facing, guard.current_position())) {
