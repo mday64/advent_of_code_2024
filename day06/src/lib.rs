@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 enum Direction {
@@ -56,14 +56,14 @@ impl Guard {
         }
     }
 
-    // Reset the guard to it's starting position and direction
+    // Reset the guard to its starting position and direction
     fn reset(&mut self) {
         self.row = self.starting_row;
         self.col = self.starting_col;
         self.facing = Direction::Up;
     }
 
-    // Reset the guard to it's position right before moving to a given
+    // Reset the guard to its position right before moving to a given
     // location from the given direction.
     fn reset_before(&mut self, facing: Direction, row: Row, col: Col) {
         self.facing = facing;
@@ -147,22 +147,20 @@ pub fn part2(input: &str) -> usize {
     }
     let mut guard = Guard::new(guard.0, guard.1);
 
-    let mut visited = HashSet::<(Direction, (Row, Col))>::new();
+    // The value (Direction) is the direction the guard was facing when
+    // they first reached the given position.
+    let mut visited = HashMap::<(Row, Col), Direction>::new();
     while (0..num_rows).contains(&guard.row) && (0..num_cols).contains(&guard.col) {
-        visited.insert((guard.facing, guard.current_position()));
+        visited.entry(guard.current_position()).or_insert(guard.facing);
         guard.step(&obstacles);
     }
 
     // Try putting an obstacle at each of the visited positions, reset
     // the guard to that position, and see whether they get into a loop.
-    // Note: we need to remove all instances of the guard at their
-    // starting position, regardless of direction.
-    visited.remove(&(Direction::Up, (guard.starting_row, guard.starting_col)));
-    visited.remove(&(Direction::Right, (guard.starting_row, guard.starting_col)));
-    visited.remove(&(Direction::Down, (guard.starting_row, guard.starting_col)));
-    visited.remove(&(Direction::Left, (guard.starting_row, guard.starting_col)));
+    // Note: we need to remove the guard's initial position.
+    visited.remove(&(guard.starting_row, guard.starting_col));
     let mut new_obstacles = HashSet::<(Row, Col)>::new();
-    for (facing, (row, col)) in visited.iter() {
+    for ((row, col), facing) in visited.iter() {
         obstacles.insert((*row, *col));
         let mut visited = HashSet::<(Direction, (Row, Col))>::new();
         guard.reset_before(*facing, *row, *col);
