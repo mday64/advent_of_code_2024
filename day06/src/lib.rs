@@ -57,11 +57,11 @@ impl Guard {
     }
 
     // Reset the guard to its starting position and direction
-    fn reset(&mut self) {
-        self.row = self.starting_row;
-        self.col = self.starting_col;
-        self.facing = Direction::Up;
-    }
+    // fn reset(&mut self) {
+    //     self.row = self.starting_row;
+    //     self.col = self.starting_col;
+    //     self.facing = Direction::Up;
+    // }
 
     // Reset the guard to its position right before moving to a given
     // location from the given direction.
