@@ -66,3 +66,8 @@ the HashMap's memory usage.
   have to clone the original precomputed values, then update the clone
   based on the new obstacle.
 
+* If Guard has a function that goes straight ahead until an obstacle or
+  out of bounds, then we can memoize/cache it.  But inserting a new
+  obstacle would have to invalidate the cache, which would probably
+  make it useless.
+
