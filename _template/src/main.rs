@@ -1,4 +1,4 @@
-use _template::{part1, part2};
+use dayNN::{part1, part2};
 
 fn main() {
     let input = include_str!("../input.txt");
