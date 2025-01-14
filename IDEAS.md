@@ -42,8 +42,27 @@ Changing the Row and Col types to i32 and i16 helped a little.  This may have
 sped up the hash computation.  It would have also reduced the overall size of
 the HashMap's memory usage.
 
-* Look into a cheaper hashing library?
+* Look into a cheaper hashing library? (Using FxHash helped.)
 * Change the structure/size of the hash keys?
 
 * Can we reset the guard's position to just before hitting the new obstacle,
-  and then check for loops?
+  and then check for loops?  (Yes, did that, too.)
+
+* We're spending a lot of time inserting new positions into a HashSet.
+* We're spending some time doing bounds checks.
+
+* Perhaps we should surround the input grid with some kind of "out of
+  bounds" character, to simplify the checking (when moving into a
+  space we'd find an obstacle or out-of-bounds, then decide what to do).
+
+* It might help to keep going forward until reaching the next obstacle
+  (to avoid repeated checks of the current direction).  Then we only need
+  to keep track of the obstacles we encounter (and from which direction?).
+
+* It might help to precompute the next obstacle (or out of bounds) when
+  hitting an obstacle from each side.  When adding a temporary obstacle,
+  we'd need to recompute any obstacles in adjacent rows or columns
+  (which might now hit the new obstacle first).  This means we'd probably
+  have to clone the original precomputed values, then update the clone
+  based on the new obstacle.
+
