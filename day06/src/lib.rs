@@ -181,8 +181,8 @@ pub fn part2(input: &str) -> usize {
 
 mod both_parts {
     use super::Direction;
-    use rustc_hash::FxHashSet;
-    use ndarray::{Array, Dim};
+    use rustc_hash::{FxHashSet, FxHashMap};
+    use ndarray::{Array, Dim, s};
 
     type Row = usize;
     type Col = usize;
@@ -330,11 +330,13 @@ mod both_parts {
 
         // Part 1: Count how many unique positions the guard occupies
         // before traveling out of bounds.
-        let mut visited = FxHashSet::<(Row, Col, Direction)>::default();
+        //
+        // The value (Direction) is the direction the guard was facing when
+        // they first reached the given position.
+        let mut visited = FxHashMap::<(Row, Col), Direction>::default();
         loop {
-            visited.insert((guard.row, guard.col, guard.facing));
-            let kind = guard.step(&grid);
-            if kind == GridSquare::OutOfBounds {
+            visited.entry(guard.current_position()).or_insert(guard.facing);
+            if guard.step(&grid) == GridSquare::OutOfBounds {
                 break;
             }
         }
@@ -344,11 +346,8 @@ mod both_parts {
         // (one at a time!) to force the guard to get into a loop.
         // Note that the guard's initial position is not allowed.
         let mut part2 = 0;
-        visited.remove(&(guard.starting_row, guard.starting_col, Direction::Up));
-        visited.remove(&(guard.starting_row, guard.starting_col, Direction::Down));
-        visited.remove(&(guard.starting_row, guard.starting_col, Direction::Left));
-        visited.remove(&(guard.starting_row, guard.starting_col, Direction::Right));
-        for (row, col, facing) in visited {
+        visited.remove(&(guard.starting_row, guard.starting_col));
+        for ((row, col), facing) in visited {
             grid[[row, col]] = GridSquare::Obstacle;
             guard.reset_before(facing, row, col);
             let mut visited = FxHashSet::<(Row, Col, Direction)>::default();
