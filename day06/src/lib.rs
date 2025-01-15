@@ -240,43 +240,50 @@ mod both_parts {
         //
         // TODO: Use ndarray's own iteration rather than indexing.
         fn go_straight(&mut self, obstacles: &Grid) -> GridSquare {
-            let mut kind: GridSquare;
             match self.facing {
                 Direction::Up => {
-                    kind = obstacles[[self.row - 1, self.col]];
-                    while kind == GridSquare::Open {
-                        self.row -= 1;
-                        kind = obstacles[[self.row - 1, self.col]];
+                    for kind in obstacles.slice(s![0..self.row;-1, self.col]).iter() {
+                        match kind {
+                            GridSquare::Open => { self.row -= 1; }
+                            GridSquare::OutOfBounds => { return *kind; }
+                            GridSquare::Obstacle => { break; } 
+                        }
                     }
                 }
                 Direction::Right => {
-                    kind = obstacles[[self.row, self.col + 1]];
-                    while kind == GridSquare::Open {
-                        self.col += 1;
-                        kind = obstacles[[self.row, self.col + 1]];
+                    for kind in obstacles.slice(s![self.row, self.col+1..]).iter() {
+                        match kind {
+                            GridSquare::Open => { self.col += 1; }
+                            GridSquare::OutOfBounds => { return *kind; }
+                            GridSquare::Obstacle => { break; } 
+                        }
                     }
                 }
                 Direction::Down => {
-                    kind = obstacles[[self.row + 1, self.col]];
-                    while kind == GridSquare::Open {
-                        self.row += 1;
-                        kind = obstacles[[self.row + 1, self.col]];
+                    for kind in obstacles.slice(s![self.row+1.., self.col]).iter() {
+                        match kind {
+                            GridSquare::Open => { self.row += 1; }
+                            GridSquare::OutOfBounds => { return *kind; }
+                            GridSquare::Obstacle => { break; } 
+                        }
                     }
                 }
                 Direction::Left => {
-                    kind = obstacles[[self.row, self.col - 1]];
-                    while kind == GridSquare::Open {
-                        self.col -= 1;
-                        kind = obstacles[[self.row, self.col - 1]];
+                    for kind in obstacles.slice(s![self.row, 0..self.col;-1]).iter() {
+                        match kind {
+                            GridSquare::Open => { self.col -= 1; }
+                            GridSquare::OutOfBounds => { return *kind; }
+                            GridSquare::Obstacle => { break; } 
+                        }
                     }
                 }
             };
 
-            if kind == GridSquare::Obstacle {
-                self.facing.turn();
-            }
+            // If we broke out of one of the above loops, that means we
+            // encountered an obstacle.  So turn.
+            self.facing.turn();
 
-            kind
+            GridSquare::Obstacle
         }
 
         // Reset the guard to its starting position and direction
@@ -339,7 +346,7 @@ mod both_parts {
             if guard.step(&grid) == GridSquare::OutOfBounds {
                 break;
             }
-        }
+        }        
         let part1 = visited.len();
 
         // Part 2: Count how many grid squares could be changed to Obstacle
