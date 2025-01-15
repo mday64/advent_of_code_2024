@@ -61,15 +61,16 @@ the HashMap's memory usage.
   to keep track of the obstacles we encounter (and from which direction?).
   (Done)
 
-* It might help to precompute the next obstacle (or out of bounds) when
-  hitting an obstacle from each side.  When adding a temporary obstacle,
-  we'd need to recompute any obstacles in adjacent rows or columns
-  (which might now hit the new obstacle first).  This means we'd probably
-  have to clone the original precomputed values, then update the clone
-  based on the new obstacle.
+* It might help to precompute or cache the next obstacle (or out of bounds) when
+  hitting an obstacle from each side.  When testing potential new obstacle
+  locations, don't actually add them to the grid; instead, check whether
+  the most recent go_forward() line segment would have passed through the
+  potential obstacle location.  It might work better if go_forward() didn't
+  update the Guard's location, but instead returned the number of spaces
+  that can be moved in the direction the Guard is facing.
 
-* If Guard has a function that goes straight ahead until an obstacle or
-  out of bounds, then we can memoize/cache it.  But inserting a new
-  obstacle would have to invalidate the cache, which would probably
-  make it useless.
-
+* Part 1 could potentially make use of the "go forward as far as possible
+  in a single direction" method, especially if it merely returns the number
+  of steps.  That would help pre-populate the cache for part 2.  But it would
+  require extra processing to build the list of visited locations and
+  directions (used for potential obstacles in part 2).
