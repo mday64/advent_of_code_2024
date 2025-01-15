@@ -54,10 +54,12 @@ the HashMap's memory usage.
 * Perhaps we should surround the input grid with some kind of "out of
   bounds" character, to simplify the checking (when moving into a
   space we'd find an obstacle or out-of-bounds, then decide what to do).
+  (Done)
 
 * It might help to keep going forward until reaching the next obstacle
   (to avoid repeated checks of the current direction).  Then we only need
   to keep track of the obstacles we encounter (and from which direction?).
+  (Done)
 
 * It might help to precompute the next obstacle (or out of bounds) when
   hitting an obstacle from each side.  When adding a temporary obstacle,
