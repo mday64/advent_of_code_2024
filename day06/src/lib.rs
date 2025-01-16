@@ -550,16 +550,17 @@ mod both_parts {
         // Note that the guard's initial position is not allowed.
         let mut part2 = 0;
         visited.remove(&(guard.starting_row, guard.starting_col));
+        let mut loop_check = FxHashSet::<(Row, Col, Direction)>::default();
         for ((row, col), facing) in visited {
             guard.reset_before(facing, row, col);
-            let mut visited = FxHashSet::<(Row, Col, Direction)>::default();
+            loop_check.clear();
             loop {
                 let kind = guard.go_straight_cached(&grid, (row, col));
                 if kind == GridSquare::OutOfBounds {
                     // Wandered outside the grid.  No loop.
                     break;
                 }
-                if !visited.insert((guard.row, guard.col, guard.facing)) {
+                if !loop_check.insert((guard.row, guard.col, guard.facing)) {
                     // We've been here before.  Loop.
                     part2 += 1;
                     break;

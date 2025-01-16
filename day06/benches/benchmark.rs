@@ -22,7 +22,6 @@ fn bench_both_parts() {
 }
 
 #[divan::bench]
-#[allow(non_snake_case)]
-fn bench_both_parts_WIP() {
+fn bench_both_parts_cached() {
     both_parts_cached(INPUT);
 }
