@@ -182,7 +182,7 @@ pub fn part2(input: &str) -> usize {
 mod both_parts {
     use super::Direction;
     use rustc_hash::{FxHashSet, FxHashMap};
-    use ndarray::{Array, Dim, s};
+    use ndarray::{Array, Dim};
 
     type Row = usize;
     type Col = usize;
@@ -202,11 +202,19 @@ mod both_parts {
         facing: Direction,
         starting_row: Row,
         starting_col: Col,
+        straight_cache: FxHashMap<(Row, Col, Direction), (Row, Col, GridSquare)>
     }
 
     impl Guard {
         fn new(row: Row, col: Col) -> Guard {
-            Guard { row, col, facing: Direction::Up, starting_row: row, starting_col: col }
+            Guard {
+                row,
+                col,
+                facing: Direction::Up,
+                starting_row: row,
+                starting_col: col,
+                straight_cache: FxHashMap::default()
+            }
         }
     
         fn current_position(&self) -> (Row, Col) {
@@ -226,7 +234,7 @@ mod both_parts {
         // then turn instead.
         fn step(&mut self, obstacles: &Grid) -> GridSquare {
             let (row, col) = self.ahead();
-            let kind = obstacles[[row, col]];
+            let kind = obstacles[(row, col)];
             match kind {
                 GridSquare::Open => { self.row = row; self.col = col; }
                 GridSquare::Obstacle => { self.facing.turn(); }
@@ -237,37 +245,35 @@ mod both_parts {
     
         // Take as many steps forward as possible.  If an obstacle is
         // reached, then turn instead.
-        //
-        // TODO: Use ndarray's own iteration rather than indexing.
         fn go_straight(&mut self, obstacles: &Grid) -> GridSquare {
             let mut kind: GridSquare;
             match self.facing {
                 Direction::Up => {
-                    kind = obstacles[[self.row - 1, self.col]];
+                    kind = obstacles[(self.row - 1, self.col)];
                     while kind == GridSquare::Open {
                         self.row -= 1;
-                        kind = obstacles[[self.row - 1, self.col]];
+                        kind = obstacles[(self.row - 1, self.col)];
                     }
                 }
                 Direction::Right => {
-                    kind = obstacles[[self.row, self.col + 1]];
+                    kind = obstacles[(self.row, self.col + 1)];
                     while kind == GridSquare::Open {
                         self.col += 1;
-                        kind = obstacles[[self.row, self.col + 1]];
+                        kind = obstacles[(self.row, self.col + 1)];
                     }
                 }
                 Direction::Down => {
-                    kind = obstacles[[self.row + 1, self.col]];
+                    kind = obstacles[(self.row + 1, self.col)];
                     while kind == GridSquare::Open {
                         self.row += 1;
-                        kind = obstacles[[self.row + 1, self.col]];
+                        kind = obstacles[(self.row + 1, self.col)];
                     }
                 }
                 Direction::Left => {
-                    kind = obstacles[[self.row, self.col - 1]];
+                    kind = obstacles[(self.row, self.col - 1)];
                     while kind == GridSquare::Open {
                         self.col -= 1;
-                        kind = obstacles[[self.row, self.col - 1]];
+                        kind = obstacles[(self.row, self.col - 1)];
                     }
                 }
             };
@@ -279,11 +285,138 @@ mod both_parts {
             kind
         }
 
-        // Reset the guard to its starting position and direction
-        fn reset(&mut self) {
-            self.row = self.starting_row;
-            self.col = self.starting_col;
-            self.facing = Direction::Up;
+        // Take as many steps forward as possible.  If an obstacle is
+        // reached, then turn instead.
+        fn go_straight_cached(&mut self, grid: &Grid, obstacle: (Row, Col)) -> GridSquare {
+            let mut kind: GridSquare;
+            match self.facing {
+                Direction::Up => {
+                    if self.col == obstacle.1 && self.row > obstacle.0 {
+                        // We might collide with the obstacle before
+                        // colliding with something in the grid
+                        kind = grid[(self.row - 1, self.col)];
+                        while kind == GridSquare::Open {
+                            if self.row - 1 == obstacle.0 {
+                                kind = GridSquare::Obstacle;
+                                break;
+                            };
+                            self.row -= 1;
+                            kind = grid[(self.row - 1, self.col)];
+                        }
+                    } else {
+                        // We can't hit the obstacle, so we can do fewer checks
+                        if let Some((new_row, new_col, square)) = self.straight_cache.get(&(self.row, self.col, self.facing)) {
+                            self.row = *new_row;
+                            self.col = *new_col;
+                            kind = *square;
+                        } else {
+                            let key = (self.row, self.col, self.facing);
+                            kind = grid[(self.row - 1, self.col)];
+                            while kind == GridSquare::Open {
+                                self.row -= 1;
+                                kind = grid[(self.row - 1, self.col)];
+                            }
+                            self.straight_cache.insert(key, (self.row, self.col, kind));
+                        }
+                    }
+                }
+                Direction::Right => {
+                    if self.row == obstacle.0 && self.col < obstacle.1 {
+                        // We might collide with the obstacle before
+                        // colliding with something in the grid
+                        kind = grid[(self.row, self.col + 1)];
+                        while kind == GridSquare::Open {
+                            if self.col + 1 == obstacle.1 {
+                                kind = GridSquare::Obstacle;
+                                break;
+                            }
+                            self.col += 1;
+                            kind = grid[(self.row, self.col + 1)];
+                        }
+                    } else {
+                        // We can't hit the obstacle, so we can do fewer checks
+                        if let Some((new_row, new_col, square)) = self.straight_cache.get(&(self.row, self.col, self.facing)) {
+                            self.row = *new_row;
+                            self.col = *new_col;
+                            kind = *square;
+                        } else {
+                            let key = (self.row, self.col, self.facing);
+                            kind = grid[(self.row, self.col + 1)];
+                            while kind == GridSquare::Open {
+                                self.col += 1;
+                                kind = grid[(self.row, self.col + 1)];
+                            }
+                            self.straight_cache.insert(key, (self.row, self.col, kind));
+                        }
+                    }
+                }
+                Direction::Down => {
+                    if self.col == obstacle.1 && self.row < obstacle.0 {
+                        // We might collide with the obstacle before
+                        // colliding with something in the grid
+                        kind = grid[(self.row + 1, self.col)];
+                        while kind == GridSquare::Open {
+                            if self.row + 1 == obstacle.0 {
+                                kind = GridSquare::Obstacle;
+                                break;
+                            };
+                            self.row += 1;
+                            kind = grid[(self.row + 1, self.col)];
+                        }
+                    } else {
+                        // We can't hit the obstacle, so we can do fewer checks
+                        if let Some((new_row, new_col, square)) = self.straight_cache.get(&(self.row, self.col, self.facing)) {
+                            self.row = *new_row;
+                            self.col = *new_col;
+                            kind = *square;
+                        } else {
+                            let key = (self.row, self.col, self.facing);
+                            kind = grid[(self.row + 1, self.col)];
+                            while kind == GridSquare::Open {
+                                self.row += 1;
+                                kind = grid[(self.row + 1, self.col)];
+                            }
+                            self.straight_cache.insert(key, (self.row, self.col, kind));
+                        }
+                    }
+                }
+                Direction::Left => {
+                    if self.row == obstacle.0 && self.col > obstacle.1 {
+                        // We might collide with the obstacle before
+                        // colliding with something in the grid
+                        kind = grid[(self.row, self.col - 1)];
+                        while kind == GridSquare::Open {
+                            if self.col - 1 == obstacle.1 {
+                                kind = GridSquare::Obstacle;
+                                break;
+                            }
+                            self.col -= 1;
+                            kind = grid[(self.row, self.col - 1)];
+                        }
+                    } else {
+                        // We can't hit the obstacle, so we can do fewer checks
+                        if let Some((new_row, new_col, square)) = self.straight_cache.get(&(self.row, self.col, self.facing)) {
+                            self.row = *new_row;
+                            self.col = *new_col;
+                            kind = *square;
+                        } else {
+                            let key = (self.row, self.col, self.facing);
+                            kind = grid[(self.row, self.col - 1)];
+                            while kind == GridSquare::Open {
+                                self.col -= 1;
+                                kind = grid[(self.row, self.col - 1)];
+                            }
+                            self.straight_cache.insert(key, (self.row, self.col, kind));
+                        }
+                    }
+                }
+            };
+
+            if kind == GridSquare::Obstacle {
+                self.facing.turn();
+            }
+
+            kind
         }
 
         // Reset the guard to its position right before moving to a given
@@ -300,6 +433,11 @@ mod both_parts {
                 Direction::Left => {self.col += 1; }
             }
         }
+
+        #[allow(dead_code)]
+        fn turn(&mut self) {
+            self.facing.turn();
+        }
     }
 
     pub fn both_parts(input: &str) -> (usize, usize) {
@@ -312,7 +450,7 @@ mod both_parts {
         let mut guard: Option<(usize, usize)> = None;
         for (row, line) in input.lines().enumerate() {
             for (col, ch) in line.chars().enumerate() {
-                grid[[row+1, col+1]] = match ch {
+                grid[(row+1, col+1)] = match ch {
                     '.' => GridSquare::Open,
                     '#' => GridSquare::Obstacle,
                     '^' => {
@@ -348,7 +486,7 @@ mod both_parts {
         let mut part2 = 0;
         visited.remove(&(guard.starting_row, guard.starting_col));
         for ((row, col), facing) in visited {
-            grid[[row, col]] = GridSquare::Obstacle;
+            grid[(row, col)] = GridSquare::Obstacle;
             guard.reset_before(facing, row, col);
             let mut visited = FxHashSet::<(Row, Col, Direction)>::default();
             loop {
@@ -361,14 +499,79 @@ mod both_parts {
                     break;
                 }
             }
-            grid[[row, col]] = GridSquare::Open;
+            grid[(row, col)] = GridSquare::Open;
+        }
+
+        (part1, part2)
+    }
+
+    pub fn both_parts_cached(input: &str) -> (usize, usize) {
+        let num_rows = input.lines().count();
+        let num_cols = input.lines().next().unwrap().len();
+
+        // Build a 2D array from the input, with extra rows and columns
+        // on each edge set to OutOfBounds.
+        let mut grid = Array::from_elem((num_rows+2, num_cols+2), GridSquare::OutOfBounds);
+        let mut guard: Option<(usize, usize)> = None;
+        for (row, line) in input.lines().enumerate() {
+            for (col, ch) in line.chars().enumerate() {
+                grid[(row+1, col+1)] = match ch {
+                    '.' => GridSquare::Open,
+                    '#' => GridSquare::Obstacle,
+                    '^' => {
+                        guard = Some((row+1, col+1));
+                        GridSquare::Open
+                    }
+                    other => panic!("Invalid input: {}", other)
+                };
+            }
+        }
+
+        // Initialize the guard to the position found in the input.
+        let guard = guard.unwrap();
+        let mut guard = Guard::new(guard.0, guard.1);
+
+        // Part 1: Count how many unique positions the guard occupies
+        // before traveling out of bounds.
+        //
+        // The value (Direction) is the direction the guard was facing when
+        // they first reached the given position.
+        let mut visited = FxHashMap::<(Row, Col), Direction>::default();
+        loop {
+            visited.entry(guard.current_position()).or_insert(guard.facing);
+            if guard.step(&grid) == GridSquare::OutOfBounds {
+                break;
+            }
+        }
+        let part1 = visited.len();
+
+        // Part 2: Count how many grid squares could be changed to Obstacle
+        // (one at a time!) to force the guard to get into a loop.
+        // Note that the guard's initial position is not allowed.
+        let mut part2 = 0;
+        visited.remove(&(guard.starting_row, guard.starting_col));
+        for ((row, col), facing) in visited {
+            guard.reset_before(facing, row, col);
+            let mut visited = FxHashSet::<(Row, Col, Direction)>::default();
+            loop {
+                let kind = guard.go_straight_cached(&grid, (row, col));
+                if kind == GridSquare::OutOfBounds {
+                    // Wandered outside the grid.  No loop.
+                    break;
+                }
+                if !visited.insert((guard.row, guard.col, guard.facing)) {
+                    // We've been here before.  Loop.
+                    part2 += 1;
+                    break;
+                }
+            }
         }
 
         (part1, part2)
     }
 }
 
-pub use both_parts::both_parts;
+pub use both_parts::{both_parts, both_parts_cached};
 
 #[test]
 fn test_part1() {
@@ -421,6 +624,24 @@ fn test_both_parts() {
     assert_eq!(both_parts(input), (41, 6));
 }
 
+#[test]
+#[allow(non_snake_case)]
+fn test_both_parts_WIP() {
+    let input = "\
+....#.....
+.........#
+..........
+..#.......
+.......#..
+..........
+.#..^.....
+........#.
+#.........
+......#...
+";
+    assert_eq!(both_parts_cached(input), (41, 6));
+}
+
 #[cfg(test)]
 const INPUT: &str = include_str!("../input.txt");
 
@@ -437,4 +658,10 @@ fn test_part2_full() {
 #[test]
 fn test_both_parts_full() {
     assert_eq!(both_parts(INPUT), (5461, 1836));
+}
+
+#[test]
+#[allow(non_snake_case)]
+fn test_both_parts_WIP_full() {
+    assert_eq!(both_parts_cached(INPUT), (5461, 1836));
 }
