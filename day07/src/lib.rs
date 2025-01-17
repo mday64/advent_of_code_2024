@@ -1,3 +1,5 @@
+use std::ops::Mul;
+
 use itertools::{repeat_n, Itertools};
 use nom::{bytes::complete::tag, character::complete::u64 as parse_u64, multi::separated_list1, sequence::separated_pair, IResult};
 
@@ -24,6 +26,23 @@ fn concat_u64(left: u64, right: u64) -> u64 {
         left = left * 10 + digit;
     }
     left
+}
+
+fn try_eval(expected: u64, operands: &[u64], operators: &[Operator]) -> bool {
+    use Operator::*;
+    assert_eq!(operands.len(), operators.len() + 1);
+
+    let mut result = operands[0];
+    for (operator, operand) in operators.iter().zip(operands[1..].iter()) {
+        if result > expected { return false; }
+        result = match *operator {
+            Add => result + operand,
+            Multiply => result * operand,
+            Concat => concat_u64(result, *operand)
+        }
+    }
+
+    result == expected
 }
 
 pub fn part1(input: &str) -> u64 {
@@ -53,14 +72,7 @@ pub fn part2(input: &str) -> u64 {
     input.lines().filter_map(|line| {
         let (_remaining, (result, operands)) = parse_line(line).unwrap();
         for operators in repeat_n([Add, Multiply, Concat], operands.len()-1).multi_cartesian_product() {
-            let temp = operands[1..].iter().zip(operators).fold(operands[0], |acc, (operand, operator)| {
-                match operator {
-                    Add => acc + operand,
-                    Multiply => acc * operand,
-                    Concat => concat_u64(acc, *operand),
-                }
-            });
-            if temp == result {
+            if try_eval(result, &operands, &operators) {
                 return Some(result);
             }
         }
