@@ -105,6 +105,8 @@ name = "day07"
 version = "0.1.0"
 dependencies = [
  "divan",
+ "itertools",
+ "nom",
 ]
 
 [[package]]
