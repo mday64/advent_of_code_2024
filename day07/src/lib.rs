@@ -10,10 +10,24 @@ fn parse_line(input: &str) -> IResult<&str, (u64, Vec<u64>)> {
 }
 
 #[derive(Debug, Clone, Copy)]
-enum Operator { Add, Multiply }
+enum Operator { Add, Multiply, Concat }
+
+fn concat_u64(left: u64, right: u64) -> u64 {
+    let mut digits = Vec::with_capacity(16);
+    let mut left = left;
+    let mut right = right;
+    while right != 0 {
+        digits.push(right % 10);
+        right /= 10;
+    }
+    while let Some(digit) = digits.pop() {
+        left = left * 10 + digit;
+    }
+    left
+}
 
 pub fn part1(input: &str) -> u64 {
-    use Operator::{Add, Multiply};
+    use Operator::*;
 
     input.lines().filter_map(|line| {
         let (_remaining, (result, operands)) = parse_line(line).unwrap();
@@ -22,6 +36,7 @@ pub fn part1(input: &str) -> u64 {
                 match operator {
                     Add => acc + operand,
                     Multiply => acc * operand,
+                    Concat => panic!("Concat not supported for part 1"),
                 }
             });
             if temp == result {
@@ -32,8 +47,25 @@ pub fn part1(input: &str) -> u64 {
     }).sum()
 }
 
-pub fn part2(_input: &str) -> u32 {
-    43
+pub fn part2(input: &str) -> u64 {
+    use Operator::*;
+
+    input.lines().filter_map(|line| {
+        let (_remaining, (result, operands)) = parse_line(line).unwrap();
+        for operators in repeat_n([Add, Multiply, Concat], operands.len()-1).multi_cartesian_product() {
+            let temp = operands[1..].iter().zip(operators).fold(operands[0], |acc, (operand, operator)| {
+                match operator {
+                    Add => acc + operand,
+                    Multiply => acc * operand,
+                    Concat => concat_u64(acc, *operand),
+                }
+            });
+            if temp == result {
+                return Some(result);
+            }
+        }
+        None
+    }).sum()
 }
 
 #[cfg(test)]
@@ -65,7 +97,11 @@ mod test {
 
     #[test]
     fn test_part2() {
-        let input = "Hello, World!";
-        assert_eq!(part2(input), 43);
+        assert_eq!(part2(EXAMPLE_INPUT), 11387);
+    }
+
+    #[test]
+    fn test_part2_full() {
+        assert_eq!(part2(FULL_INPUT), 354060705047464);
     }
 }
