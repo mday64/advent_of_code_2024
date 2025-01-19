@@ -1,5 +1,3 @@
-use std::ops::Mul;
-
 use itertools::{repeat_n, Itertools};
 use nom::{bytes::complete::tag, character::complete::u64 as parse_u64, multi::separated_list1, sequence::separated_pair, IResult};
 
