@@ -173,22 +173,24 @@ pub fn part2_heaps(input: &str) -> u64 {
             if let Some(pos) = heap.peek() {
                 // Found a free spot that's big enough.  See if this is
                 // a smaller position than anything we've found so far.
-                if best.is_some_and(|b| *pos < b.0) || best.is_none() {
+                if best.is_some_and(|b| pos.0 < b.0.0) || best.is_none() {
                     best.replace((*pos, heap_size));
                 }
             }
         }
 
         if let Some((pos, size)) = best {
-            // Move file to `pos`
-            file.position = pos.0;
+            if pos.0 < file.position {
+                // Move file to `pos`
+                file.position = pos.0;
 
-            // Remove free chunk, shrink, and insert into correct heap
-            free_blocks[size].pop();
-            if size > file.length as usize {
-                let pos = pos.0 + file.length as u32;
-                let size = size - file.length as usize;
-                free_blocks[size].push(Reverse(pos));
+                // Remove free chunk, shrink, and insert into correct heap
+                free_blocks[size].pop();
+                if size > file.length as usize {
+                    let pos = pos.0 + file.length as u32;
+                    let size = size - file.length as usize;
+                    free_blocks[size].push(Reverse(pos));
+                }
             }
         }
     }
