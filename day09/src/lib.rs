@@ -128,6 +128,79 @@ pub fn part2(input: &str) -> u64 {
     .sum()
 }
 
+pub fn part2_heaps(input: &str) -> u64 {
+    use std::collections::BinaryHeap;
+    use std::cmp::Reverse;
+
+    type Position = u32;
+    type FileID = u16;
+    type Length = u8;
+    struct FileInfo {
+        position: Position,
+        file_id: FileID,
+        length: Length
+    }
+    let mut file_blocks = Vec::<FileInfo>::new();
+    let mut free_blocks: Vec<BinaryHeap<Reverse<Position>>> =
+        (0..=9).map(|_| BinaryHeap::new()).collect();
+
+    // Parse the input
+    let input = input.trim_end();
+    let input = input.as_bytes();
+    let mut position = 0;
+    let mut file_id = 0;
+    let mut is_free = false;        // Is the current run free space?
+    for byte in input {
+        if !byte.is_ascii_digit() { break; }
+        let length = byte - b'0';
+        if is_free {
+            free_blocks[length as usize].push(Reverse(position));
+        } else {
+            file_blocks.push(FileInfo{position, file_id, length});
+            file_id += 1;
+        }
+        position += length as Position;
+        is_free = !is_free;
+    }
+
+    // Move whole files to the chunk of free space closest to the start
+    // that is big enough to contain the file.
+    for file in file_blocks.iter_mut().rev() {
+        // Try to find some space to move `file`
+        let length = file.length as usize;
+        let mut best: Option<(Reverse<Position>, usize)> = None;
+        for (heap_size, heap) in free_blocks.iter().enumerate().skip(length) {
+            if let Some(pos) = heap.peek() {
+                // Found a free spot that's big enough.  See if this is
+                // a smaller position than anything we've found so far.
+                if best.is_some_and(|b| *pos < b.0) || best.is_none() {
+                    best.replace((*pos, heap_size));
+                }
+            }
+        }
+
+        if let Some((pos, size)) = best {
+            // Move file to `pos`
+            file.position = pos.0;
+
+            // Remove free chunk, shrink, and insert into correct heap
+            free_blocks[size].pop();
+            if size > file.length as usize {
+                let pos = pos.0 + file.length as u32;
+                let size = size - file.length as usize;
+                free_blocks[size].push(Reverse(pos));
+            }
+        }
+    }
+
+    // Calculate the checksum
+    file_blocks.into_iter().map(|file| {
+        ((file.position as u64) .. (file.position as u64 + file.length as u64))
+        .sum::<u64>() * file.file_id as u64
+    })
+    .sum()
+}
+
 #[cfg(test)]
 const FULL_INPUT: &str = include_str!("../input.txt");
 
@@ -151,4 +224,15 @@ fn test_part2() {
 #[test]
 fn test_part2_full() {
     assert_eq!(part2(FULL_INPUT), 6390781891880);
+}
+
+#[test]
+fn test_part2_heaps() {
+    let input = "2333133121414131402";
+    assert_eq!(part2_heaps(input), 2858);
+}
+
+#[test]
+fn test_part2_heaps_full() {
+    assert_eq!(part2_heaps(FULL_INPUT), 6390781891880);
 }

@@ -74,3 +74,19 @@ the HashMap's memory usage.
   of steps.  That would help pre-populate the cache for part 2.  But it would
   require extra processing to build the list of visited locations and
   directions (used for potential obstacles in part 2).
+
+## Day 9
+### Part 2
+* Try keeping binary heaps for free chunks (sorted by position).  Have a
+  heap for each size (1-9).  When looking to move a file, peek at all of
+  the heaps of that size or larger, and select the smallest position.
+  Obviously, the free space needs to be removed from its heap; if the
+  chunk was not fully used, insert the remainder in the appropriate size
+  heap.
+
+  NOTE: std::collections::binary_heap::BinaryHeap lacks a heapify() method,
+  although it can extend() from an iterator.  It can also do from() an
+  array.
+
+  NOTE: BinaryHeap is a MAX heap.  Use std::cmp::Reverse to wrap elements
+  so that they sort in reverse order (i.e. a min heap).
