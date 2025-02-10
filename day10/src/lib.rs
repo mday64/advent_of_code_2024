@@ -1,6 +1,6 @@
 mod part1 {
-    use std::collections::HashMap;
     use pathfinding::prelude::dfs;
+    use std::collections::HashMap;
     type Row = isize;
     type Col = isize;
     type Grid = HashMap<(Row, Col), u8>;
@@ -29,14 +29,19 @@ mod part1 {
             for dest in nines.iter() {
                 if dfs(
                     (row, col),
-                    |&(r,c)| {
-                        let height = grid.get(&(r,c)).unwrap();
-                        [(r-1,c), (r+1,c), (r,c-1), (r,c+1)].into_iter()
-                            .filter(|&(rr,cc)| grid.get(&(rr,cc)).is_some_and(|v| { let height = *height; *v==height || *v==height+1 }))
+                    |&(r, c)| {
+                        let height = grid.get(&(r, c)).unwrap();
+                        [(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)]
+                            .into_iter()
+                            .filter(|&(rr, cc)| {
+                                grid.get(&(rr, cc)) == Some(&(*height + 1))
+                            })
                     },
-                    |loc| loc==dest
-                ).is_some() {
-                    println!("({}, {}) => ({}, {})", row, col, dest.0, dest.1);
+                    |loc| loc == dest,
+                )
+                .is_some()
+                {
+                    // println!("({}, {}) => ({}, {})", row, col, dest.0, dest.1);
                     result += 1;
                 }
             }

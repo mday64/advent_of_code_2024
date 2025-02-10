@@ -5,7 +5,8 @@ fn main() {
 
     let result1 = part1(input);
     println!("Part 1: {result1}");
-
+    assert_eq!(result1, 798);
+    
     let result2 = part2(input);
     println!("Part 2: {result2}");
 }
