@@ -21,15 +21,25 @@ mod part1 {
         // are reachable.
         zeroes.into_iter().map(|(row, col)|
             dfs_reach(
-                (row, col),
-                |&(r, c)| {
-                    let height = grid.get(&(r, c)).unwrap();
+                (row, col, &b'0'),
+                |&(r, c, h)| {
                     [(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)]
                         .into_iter()
-                        .filter(|&(rr, cc)| grid.get(&(rr, cc)) == Some(&(*height + 1)))
+                        .filter_map(|(rr, cc)| {
+                            let h = *h;
+                            if let Some(neighbor_height) = grid.get(&(rr,cc)) {
+                                if *neighbor_height == h + 1 {
+                                    Some((rr, cc, neighbor_height))
+                                } else {
+                                    None
+                                }
+                            } else {
+                                None
+                            }
+                        })
                 }
             )
-            .filter(|loc| grid.get(loc) == Some(&b'9'))
+            .filter(|(_r, _c, h)| **h == b'9')
             .count()
         ).sum()
     }
