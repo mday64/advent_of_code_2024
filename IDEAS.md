@@ -90,3 +90,10 @@ the HashMap's memory usage.
 
   NOTE: BinaryHeap is a MAX heap.  Use std::cmp::Reverse to wrap elements
   so that they sort in reverse order (i.e. a min heap).
+
+## Day 10
+Solve both parts with a single traversal.  Use a depth-first search to find
+all paths from a given trailhead.  Count (using a hashmap) how many times
+each trail end ('9') is reached.  The answer for part 1 will be the number
+of keys in the hashmap. The answer for part 2 will be the sum of the values
+in the hashmap.

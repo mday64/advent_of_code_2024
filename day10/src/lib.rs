@@ -1,5 +1,5 @@
 mod part1 {
-    use pathfinding::prelude::dfs;
+    use pathfinding::prelude::dfs_reach;
     use std::collections::HashMap;
     type Row = isize;
     type Col = isize;
@@ -8,43 +8,30 @@ mod part1 {
         // Parse the input
         let mut grid: Grid = Grid::new();
         let mut zeroes = Vec::new();
-        let mut nines = Vec::new();
         for (row, line) in input.lines().enumerate() {
             let row = row as isize;
             for (col, byte) in line.bytes().enumerate() {
                 let col = col as isize;
                 grid.insert((row, col), byte);
-                match byte {
-                    b'0' => zeroes.push((row, col)),
-                    b'9' => nines.push((row, col)),
-                    _ => {}
-                }
+                if byte == b'0' { zeroes.push((row, col)) }
             }
         }
 
-        let mut result = 0;
         // For each trailhead (b'0'), see how many unique trail ends (b'9')
         // are reachable.
-        for (row, col) in zeroes {
-            for dest in nines.iter() {
-                if dfs(
-                    (row, col),
-                    |&(r, c)| {
-                        let height = grid.get(&(r, c)).unwrap();
-                        [(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)]
-                            .into_iter()
-                            .filter(|&(rr, cc)| grid.get(&(rr, cc)) == Some(&(*height + 1)))
-                    },
-                    |loc| loc == dest,
-                )
-                .is_some()
-                {
-                    // println!("({}, {}) => ({}, {})", row, col, dest.0, dest.1);
-                    result += 1;
+        zeroes.into_iter().map(|(row, col)|
+            dfs_reach(
+                (row, col),
+                |&(r, c)| {
+                    let height = grid.get(&(r, c)).unwrap();
+                    [(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)]
+                        .into_iter()
+                        .filter(|&(rr, cc)| grid.get(&(rr, cc)) == Some(&(*height + 1)))
                 }
-            }
-        }
-        result
+            )
+            .filter(|loc| grid.get(loc) == Some(&b'9'))
+            .count()
+        ).sum()
     }
 }
 pub use part1::part1;
