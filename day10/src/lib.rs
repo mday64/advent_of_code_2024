@@ -1,5 +1,5 @@
 mod part1 {
-    use pathfinding::prelude::dfs_reach;
+    use pathfinding::prelude::bfs_reach;
     use std::collections::HashMap;
     type Row = isize;
     type Col = isize;
@@ -20,7 +20,7 @@ mod part1 {
         // For each trailhead (b'0'), see how many unique trail ends (b'9')
         // are reachable.
         zeroes.into_iter().map(|(row, col)|
-            dfs_reach(
+            bfs_reach(
                 (row, col, &b'0'),
                 |&(r, c, h)| {
                     [(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)]
