@@ -68,8 +68,8 @@ pub fn part2(input: &str) -> usize {
     }
 
     let mut result = 0;
-    // For each trailhead (b'0'), see how many unique trail ends (b'9')
-    // are reachable.
+    // For each trailhead (b'0'), see how many unique paths to a trail
+    // end (b'9').
     for (row, col) in zeroes {
         result += count_paths(
             (row, col),
