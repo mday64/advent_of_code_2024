@@ -1,5 +1,21 @@
-use rustc_hash::FxHashSet;
-use indexmap::IndexMap;
+use rustc_hash::{FxHashMap, FxHashSet};
+
+trait MapPop<K, V> {
+    fn pop(&mut self) -> Option<(K,V)>;
+}
+
+impl<K,V> MapPop<K,V> for FxHashMap<K, V>
+where K: std::cmp::Eq, K:std::hash::Hash, K:Copy {
+    fn pop(&mut self) -> Option<(K,V)> {
+        if self.is_empty() {
+            None
+        } else {
+            let k = *self.keys().next().unwrap();
+            let v = self.remove(&k).unwrap();
+            Some((k, v))
+        }
+    }
+}
 
 //
 // Find regions of adjacent cells with the same letter.  Determine the
@@ -13,7 +29,7 @@ use indexmap::IndexMap;
 //
 pub fn part1(input: &str) -> usize {
     // Parse the input
-    let mut plots = IndexMap::new();
+    let mut plots = FxHashMap::default();
     for (row, line) in input.lines().enumerate() {
         for (col, letter) in line.bytes().enumerate() {
             // The +1's below prevent underflow when trying to access
@@ -37,7 +53,7 @@ pub fn part1(input: &str) -> usize {
             }
             if plots.get(&(row, col)) == Some(&letter) {
                 // eprintln!("  ({row},{col}) connected");
-                plots.swap_remove(&(row, col));
+                plots.remove(&(row, col));
                 connected.insert((row, col));
                 for (r,c) in [(row-1,col), (row+1,col), (row,col-1), (row,col+1)] {
                     frontier.push((r,c));
@@ -61,7 +77,7 @@ pub fn part1(input: &str) -> usize {
 //
 pub fn part2(input: &str) -> usize {
     // Parse the input
-    let mut plots = IndexMap::new();
+    let mut plots = FxHashMap::default();
     for (row, line) in input.lines().enumerate() {
         for (col, letter) in line.bytes().enumerate() {
             // The +1's below prevent underflow when trying to access
@@ -84,7 +100,7 @@ pub fn part2(input: &str) -> usize {
             }
             if plots.get(&(row, col)) == Some(&letter) {
                 // eprintln!("  ({row},{col}) connected");
-                plots.swap_remove(&(row, col));
+                plots.remove(&(row, col));
                 connected.insert((row, col));
                 for (r,c) in [(row-1,col), (row+1,col), (row,col-1), (row,col+1)] {
                     frontier.push((r,c));
