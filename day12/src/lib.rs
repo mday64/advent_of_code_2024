@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use rustc_hash::FxHashSet;
 use indexmap::IndexMap;
 
 //
@@ -26,7 +26,8 @@ pub fn part1(input: &str) -> usize {
 
     while let Some(((row, col), letter)) = plots.pop() {
         // eprintln!("{} @ ({row}, {col}):", letter as char);
-        let mut connected = HashSet::from([(row, col)]);
+        let mut connected = FxHashSet::default();
+        connected.insert((row, col));
         let mut frontier = Vec::from([(row-1, col), (row+1,col), (row,col-1), (row,col+1)]);
         let mut perimeter = 0;
 
@@ -73,7 +74,8 @@ pub fn part2(input: &str) -> usize {
 
     while let Some(((row, col), letter)) = plots.pop() {
         // eprintln!("{} @ ({row}, {col}):", letter as char);
-        let mut connected = HashSet::from([(row, col)]);
+        let mut connected = FxHashSet::default();
+        connected.insert((row, col));
         let mut frontier = Vec::from([(row-1, col), (row+1,col), (row,col-1), (row,col+1)]);
 
         while let Some((row, col)) = frontier.pop() {
