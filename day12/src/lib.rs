@@ -107,11 +107,15 @@ pub fn part2(input: &str) -> usize {
                 top_run = false;
                 bottom_run = false;
             }
-            if !connected.contains(&(row-1,col)) && !top_run {
+            if connected.contains(&(row-1, col)) {
+                top_run = false
+            } else if !top_run {
                 top_run = true;
                 sides += 1;
             }
-            if !connected.contains(&(row+1,col)) && !bottom_run {
+            if connected.contains(&(row+1,col)) {
+                bottom_run = false;
+            } else if !bottom_run {
                 bottom_run = true;
                 sides += 1;
             }
@@ -130,11 +134,15 @@ pub fn part2(input: &str) -> usize {
                 left_run = false;
                 right_run = false;
             }
-            if !connected.contains(&(row,col-1)) && !left_run {
+            if connected.contains(&(row,col-1)) {
+                left_run = false;
+            } else if !left_run {
                 left_run = true;
                 sides += 1;
             }
-            if !connected.contains(&(row,col+1)) && !right_run {
+            if connected.contains(&(row,col+1)) {
+                right_run = false;
+            } else if !right_run {
                 right_run = true;
                 sides += 1;
             }
@@ -241,12 +249,16 @@ AAAAAA
 #[test]
 fn test_part2_ex5() {
     let input = "\
-AAAAAA
-AAABBA
-AAABBA
-ABBAAA
-ABBAAA
-AAAAAA
+RRRRIICCFF
+RRRRIICCCF
+VVRRRCCFFF
+VVRCCCJFFF
+VVVVCJJCFE
+VVIVCCJJEE
+VVIIICJJEE
+MIIIIIJJEE
+MIIISIJEEE
+MMMISSJEEE
 ";
     assert_eq!(part2(input), 1206);
 }
