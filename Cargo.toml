@@ -1,6 +1,6 @@
 [workspace]
 exclude = [ "_template" ]
-members = [ "day*" ]
+members = [ "aoc_utils", "day*" ]
 resolver = "2"
 
 [profile.release]

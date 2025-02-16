@@ -1,38 +1,5 @@
 use rustc_hash::{FxHashMap, FxHashSet};
-
-trait MapPop<K, V> {
-    fn pop(&mut self) -> Option<(K,V)>;
-}
-
-impl<K,V> MapPop<K,V> for FxHashMap<K, V>
-where K: std::cmp::Eq, K:std::hash::Hash, K:Clone {
-    fn pop(&mut self) -> Option<(K,V)> {
-        if self.is_empty() {
-            None
-        } else {
-            let k = self.keys().next().unwrap().clone();
-            let (k, v) = self.remove_entry(&k).unwrap();
-            Some((k, v))
-        }
-    }
-}
-
-trait SetPop<V> {
-    fn pop(&mut self) -> Option<V>;
-}
-
-impl<V> SetPop<V> for FxHashSet<V>
-where V: std::cmp::Eq, V:std::hash::Hash, V:Copy {
-    fn pop(&mut self) -> Option<V> {
-        if self.is_empty() {
-            None
-        } else {
-            let v = *self.iter().next().unwrap();
-            self.remove(&v);
-            Some(v)
-        }
-    }
-}
+use aoc_utils::HashPop;
 
 //
 // Find regions of adjacent cells with the same letter.  Determine the
