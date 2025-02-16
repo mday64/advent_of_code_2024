@@ -179,19 +179,12 @@ pub fn part2_ndarray(input: &str) -> usize {
 
     let mut price = 0;
 
-    let mut row = 1;
-    let mut col = 1;
-    while row < num_rows - 1 {
-        if col >= num_cols - 1 {
-            col = 1;
-            row += 1;
+    let mut visited = Array2::default(plots.raw_dim());
+    for ((row, col), &letter) in plots.indexed_iter() {
+        if letter == 0 || visited[(row, col)] {
             continue;
         }
-        let letter = plots[(row, col)];
-        if letter == 0 {
-            col += 1;
-            continue;
-        }
+        visited[(row, col)] = true;
 
         let mut connected = FxHashSet::default();
         connected.insert((row, col));
@@ -203,7 +196,7 @@ pub fn part2_ndarray(input: &str) -> usize {
             }
             if plots[(row, col)] == letter {
                 // eprintln!("  ({row},{col}) connected");
-                plots[(row, col)] = 0;
+                visited[(row, col)] = true;
                 connected.insert((row, col));
                 for (r,c) in [(row-1,col), (row+1,col), (row,col-1), (row,col+1)] {
                     frontier.push((r,c));
@@ -274,8 +267,6 @@ pub fn part2_ndarray(input: &str) -> usize {
         // eprintln!("{}: area={}, sides={}", letter as char, region.len(), sides);
 
         price += sides * region.len();
-
-        col += 1;
     }
 
     price
