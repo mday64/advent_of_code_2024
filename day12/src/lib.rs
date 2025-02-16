@@ -5,14 +5,31 @@ trait MapPop<K, V> {
 }
 
 impl<K,V> MapPop<K,V> for FxHashMap<K, V>
-where K: std::cmp::Eq, K:std::hash::Hash, K:Copy {
+where K: std::cmp::Eq, K:std::hash::Hash, K:Clone {
     fn pop(&mut self) -> Option<(K,V)> {
         if self.is_empty() {
             None
         } else {
-            let k = *self.keys().next().unwrap();
-            let v = self.remove(&k).unwrap();
+            let k = self.keys().next().unwrap().clone();
+            let (k, v) = self.remove_entry(&k).unwrap();
             Some((k, v))
+        }
+    }
+}
+
+trait SetPop<V> {
+    fn pop(&mut self) -> Option<V>;
+}
+
+impl<V> SetPop<V> for FxHashSet<V>
+where V: std::cmp::Eq, V:std::hash::Hash, V:Copy {
+    fn pop(&mut self) -> Option<V> {
+        if self.is_empty() {
+            None
+        } else {
+            let v = *self.iter().next().unwrap();
+            self.remove(&v);
+            Some(v)
         }
     }
 }
@@ -176,6 +193,127 @@ pub fn part2(input: &str) -> usize {
     price
 }
 
+pub fn part2_ndarray(input: &str) -> usize {
+    use ndarray::Array2;
+    // Parse the input
+    // The "+2" below is to allow boundary rows and columns around the
+    // actual input, so we can look for neighbors without under- or
+    // overflowing indices.
+    let num_rows = input.lines().count() + 2;
+    let num_cols = input.lines().next().unwrap().len() + 2;
+    let mut plots = Array2::zeros((num_rows, num_cols));
+    for (row, line) in input.lines().enumerate() {
+        for (col, letter) in line.bytes().enumerate() {
+            // The +1's below prevent underflow when trying to access
+            // neighbors in previous rows or columns.
+            plots[(row+1, col+1)] = letter;
+        }
+    }
+
+    let mut price = 0;
+
+    let mut row = 1;
+    let mut col = 1;
+    while row < num_rows - 1 {
+        if col >= num_cols - 1 {
+            col = 1;
+            row += 1;
+            continue;
+        }
+        let letter = plots[(row, col)];
+        if letter == 0 {
+            col += 1;
+            continue;
+        }
+
+        let mut connected = FxHashSet::default();
+        connected.insert((row, col));
+        let mut frontier = Vec::from([(row-1, col), (row+1,col), (row,col-1), (row,col+1)]);
+
+        while let Some((row, col)) = frontier.pop() {
+            if connected.contains(&(row, col)) {
+                continue;
+            }
+            if plots[(row, col)] == letter {
+                // eprintln!("  ({row},{col}) connected");
+                plots[(row, col)] = 0;
+                connected.insert((row, col));
+                for (r,c) in [(row-1,col), (row+1,col), (row,col-1), (row,col+1)] {
+                    frontier.push((r,c));
+                }
+            }
+        }
+
+        // Now that we have the whole region, determine how many sides it has.
+        // But how do we calculate number of sides?  My inclination is to look
+        // for horizontal and vertical sides separately.
+        let mut region = Vec::from_iter(connected.iter().cloned());
+        let mut sides = 0;
+
+        // Horizontal sides
+        region.sort_unstable();
+        let mut last_row = 0;       // There are no cells in row 0.
+        let mut last_col = 0;       // ... or column 0.
+        let mut top_run = false;
+        let mut bottom_run = false;
+        for &(row, col) in region.iter() {
+            if row != last_row || col != last_col + 1 {
+                top_run = false;
+                bottom_run = false;
+            }
+            if connected.contains(&(row-1, col)) {
+                top_run = false
+            } else if !top_run {
+                top_run = true;
+                sides += 1;
+            }
+            if connected.contains(&(row+1,col)) {
+                bottom_run = false;
+            } else if !bottom_run {
+                bottom_run = true;
+                sides += 1;
+            }
+            last_row = row;
+            last_col = col;
+        }
+
+        // Vertical sides
+        region.sort_unstable_by_key(|cell| (cell.1, cell.0));
+        let mut last_row = 0;       // There are no cells in row 0.
+        let mut last_col = 0;       // ... or column 0.
+        let mut left_run = false;
+        let mut right_run = false;
+        for &(row, col) in region.iter() {
+            if col != last_col || row != last_row + 1 {
+                left_run = false;
+                right_run = false;
+            }
+            if connected.contains(&(row,col-1)) {
+                left_run = false;
+            } else if !left_run {
+                left_run = true;
+                sides += 1;
+            }
+            if connected.contains(&(row,col+1)) {
+                right_run = false;
+            } else if !right_run {
+                right_run = true;
+                sides += 1;
+            }
+            last_row = row;
+            last_col = col;
+        }
+
+        // eprintln!("{}: area={}, sides={}", letter as char, region.len(), sides);
+
+        price += sides * region.len();
+
+        col += 1;
+    }
+
+    price
+}
+
 #[test]
 fn test_part1_ex1() {
     let input = "\
@@ -292,4 +430,9 @@ fn test_part1_full() {
 #[test]
 fn test_part2_full() {
     assert_eq!(part2(FULL_INPUT), 821372);
+}
+
+#[test]
+fn test_part2_ndarray_full() {
+    assert_eq!(part2_ndarray(FULL_INPUT), 821372);
 }

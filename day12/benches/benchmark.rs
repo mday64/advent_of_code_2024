@@ -1,4 +1,4 @@
-use day12::{ part1, part2 };
+use day12::{ part1, part2, part2_ndarray };
 
 fn main() {
     divan::main();
@@ -14,4 +14,9 @@ fn bench_part1() {
 #[divan::bench]
 fn bench_part2() {
     part2(INPUT);
+}
+
+#[divan::bench]
+fn bench_part2_ndarray() {
+    part2_ndarray(INPUT);
 }
