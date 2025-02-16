@@ -150,7 +150,7 @@ pub fn part2(input: &str) -> usize {
             last_col = col;
         }
 
-        eprintln!("{}: area={}, sides={}", letter as char, region.len(), sides);
+        // eprintln!("{}: area={}, sides={}", letter as char, region.len(), sides);
 
         price += sides * region.len();
     }
@@ -269,4 +269,9 @@ static FULL_INPUT: &str = include_str!("../input.txt");
 #[test]
 fn test_part1_full() {
     assert_eq!(part1(FULL_INPUT), 1375476);
+}
+
+#[test]
+fn test_part2_full() {
+    assert_eq!(part2(FULL_INPUT), 821372);
 }
