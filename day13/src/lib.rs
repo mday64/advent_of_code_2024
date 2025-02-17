@@ -51,7 +51,7 @@ fn parse_prize(input: &str) -> IResult<&str, Coord> {
     Ok((input, Coord{x,y}))
 }
 
-struct Machine {
+pub struct Machine {
     a: Coord,
     b: Coord,
     prize: Coord
@@ -61,7 +61,7 @@ fn parse_machine(input: &str) -> IResult<&str, Machine> {
     Ok((input, Machine{a, b, prize}))
 }
 
-fn parse_machines(input: &str) -> IResult<&str, Vec<Machine>> {
+pub fn parse_machines(input: &str) -> IResult<&str, Vec<Machine>> {
     many1(parse_machine).parse(input)
 }
 

@@ -1,4 +1,4 @@
-use day13::{ part1, part2 };
+use day13::{ part1, part2, parse_machines };
 
 fn main() {
     divan::main();
@@ -14,4 +14,10 @@ fn bench_part1() {
 #[divan::bench]
 fn bench_part2() {
     part2(INPUT);
+}
+
+#[divan::bench]
+fn bench_parsing() {
+    let (_, machines) = parse_machines(INPUT).expect("well formed input");
+    assert!(machines.len() > 1);
 }
