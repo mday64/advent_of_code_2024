@@ -65,24 +65,22 @@ fn parse_machines(input: &str) -> IResult<&str, Vec<Machine>> {
     many1(parse_machine).parse(input)
 }
 
-fn machine_cost(m: &Machine) -> Option<i32> {
-    let denominator = m.b.y * m.a.x - m.b.x * m.a.y;
-    let num_m = m.b.y * m.prize.x - m.b.x * m.prize.y;
-    let num_n = m.a.x * m.prize.y - m.a.y * m.prize.x;
-
-    if num_m % denominator == 0 && num_n % denominator == 0 {
-        let m = num_m / denominator;
-        let n = num_n / denominator;
-        if m >= 0 && n >= 0 {
-            return Some(3*m+n);
-        }
-    }
-    None
-}
-
 pub fn part1(input: &str) -> i32 {
     let (_, machines) = parse_machines(input).expect("well formed input");
-    machines.iter().filter_map(machine_cost).sum()
+    machines.iter().filter_map(|m| {
+        let denominator = m.b.y * m.a.x - m.b.x * m.a.y;
+        let num_m = m.b.y * m.prize.x - m.b.x * m.prize.y;
+        let num_n = m.a.x * m.prize.y - m.a.y * m.prize.x;
+    
+        if num_m % denominator == 0 && num_n % denominator == 0 {
+            let m = num_m / denominator;
+            let n = num_n / denominator;
+            if m >= 0 && n >= 0 {
+                return Some(3*m+n);
+            }
+        }
+        None
+    }).sum()
 }
 
 pub fn part2(_input: &str) -> String {
