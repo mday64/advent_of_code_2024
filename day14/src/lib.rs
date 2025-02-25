@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use nom::{bytes::complete::tag, character::complete::{line_ending, i32}, multi::separated_list1, sequence::{preceded, separated_pair}, IResult, Parser};
+use nom::{bytes::complete::tag, character::complete::{self,line_ending}, multi::separated_list1, sequence::{preceded, separated_pair}, IResult, Parser};
 
 struct Coord {
     x: i32,
@@ -54,9 +54,9 @@ pub fn part2_helper(input: &str) {
             grid[robot.position.y as usize][robot.position.x as usize] = b'#';
         }
         println!("\x0cAfter {} seconds:", i);
-        for y in 0..103 {
-            for x in 0..101 {
-                print!("{}", grid[y][x] as char);
+        for row in grid {
+            for ch in row {
+                print!("{}", ch as char);
             }
             println!();
         }
@@ -77,7 +77,7 @@ pub fn part2() -> u32 {
 }
 
 fn parse_coord(input: &str) -> IResult<&str, Coord> {
-    let (rest,(x,y)) = separated_pair(i32, tag(","), i32).parse(input)?;
+    let (rest,(x,y)) = separated_pair(complete::i32, tag(","), complete::i32).parse(input)?;
     Ok((rest, Coord{x,y}))
 }
 
