@@ -6,6 +6,6 @@ fn main() {
     let result1 = part1(input);
     println!("Part 1: {result1}");
 
-    let result2 = part2(input);
+    let result2 = part2();
     println!("Part 2: {result2}");
 }
