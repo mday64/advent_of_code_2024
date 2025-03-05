@@ -1,4 +1,5 @@
-use std::collections::{HashMap, HashSet};
+use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
+// use std::collections::{HashMap, HashSet};
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 struct Coord (i32, i32);
@@ -45,7 +46,7 @@ pub fn part1(input: &str) -> i32 {
     let (warehouse, moves) = input.split_once("\n\n").expect("missing empyty line?");
 
     // Parse the map of the warehouse
-    let mut grid = HashMap::new();
+    let mut grid = HashMap::default();
     let mut robot = None;
     for (row, line) in warehouse.lines().enumerate() {
         let row = row as i32;
@@ -123,8 +124,8 @@ pub fn part2(input: &str) -> i32 {
     let (warehouse, moves) = input.split_once("\n\n").expect("missing empyty line?");
 
     // Parse the map of the warehouse
-    let mut boxes = HashSet::new();     // Coord of left half of box
-    let mut walls = HashSet::new();     // Coords of all wall squares
+    let mut boxes = HashSet::default();     // Coord of left half of box
+    let mut walls = HashSet::default();     // Coords of all wall squares
     let mut robot = None;
     for (line, row) in warehouse.lines().zip(0..) {
         for (ch, col) in line.bytes().zip(0..) {
@@ -212,13 +213,13 @@ pub fn part2(input: &str) -> i32 {
                 // column to the left, too, in case we're pushing on the right
                 // side of a box.
                 let dir = if dir == b'^' { -1 } else { 1 };
-                let mut boxes_to_move = HashSet::new();
+                let mut boxes_to_move = HashSet::default();
                 let mut row = robot.0;
-                let mut cols_pushing = HashSet::from([robot.1]);
+                let mut cols_pushing = HashSet::from_iter([robot.1]);
 
                 while !cols_pushing.is_empty() {
                     row += dir;
-                    let mut next_cols = HashSet::new();
+                    let mut next_cols = HashSet::default();
                     for col in cols_pushing {
                         if walls.contains(&Coord(row, col)) {
                             // A wall is preventing us from moving
