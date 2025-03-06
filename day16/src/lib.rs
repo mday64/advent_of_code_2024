@@ -52,8 +52,8 @@ pub fn part1(input: &str) -> usize {
     let start = (start.expect("no start?"), Direction::East);
     let end = end.expect("no end?");
 
-    let success = |&(location, _direction)| { location == end };
-    let heuristic = |&((row, col), _direction)| {
+    let success = |&(location, _direction): &_| { location == end };
+    let heuristic = |&((row, col), _direction): &_| {
         end.0.abs_diff(row) + end.1.abs_diff(col)
     };
     let successors = |&((row, col), direction) : &((usize, usize), Direction)| {
@@ -133,4 +133,12 @@ fn test_part1_example_2() {
 fn test_part2() {
     let input = "Hello, World!";
     assert_eq!(part2(input), "World");
+}
+
+#[cfg(test)]
+static FULL_INPUT: &str = include_str!("../input.txt");
+
+#[test]
+fn test_part1_full() {
+    assert_eq!(part1(FULL_INPUT), 66404);
 }
