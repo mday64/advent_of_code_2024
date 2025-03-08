@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 itertools = "0.14.0"
 nom = "8.0.0"
+num = "0.4.3"
 
 [dev-dependencies]
 divan = "0.1.17"
