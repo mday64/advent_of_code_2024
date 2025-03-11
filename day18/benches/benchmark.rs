@@ -13,5 +13,5 @@ fn bench_part1() {
 
 #[divan::bench]
 fn bench_part2() {
-    part2(INPUT);
+    part2(INPUT, 1024, 70);
 }
