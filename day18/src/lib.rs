@@ -4,7 +4,7 @@ use rustc_hash::FxHashSet;
 //
 // Another pathfinding problem
 //
-pub fn part1(input: &str, num_points: usize, max_dimension: i32) -> u32 {
+pub fn path_length(input: &str, num_points: usize, max_dimension: i32) -> Option<u32> {
     let mut walls = FxHashSet::default();
     for line in input.lines().take(num_points) {
         let (x, y) = line.split_once(",").expect("valid input");
@@ -36,10 +36,21 @@ pub fn part1(input: &str, num_points: usize, max_dimension: i32) -> u32 {
             }
         })
     };
-    let (_path, cost) = astar(&(0,0), successors, heuristic, success).expect("solution");
-    cost
+    let (_path, cost) = astar(&(0,0), successors, heuristic, success)?;
+    Some(cost)
 }
 
+fn part1(input: &str, num_points: usize, max_dimension: i32) -> u32 {
+    path_length(input, num_points, max_dimension).expect("a solution")
+}
+
+//
+// This time, we have to report the coordinates of the first point
+// that makes it impossible to find a path.
+//
+// We could just keep trying them sequentially, or we could binary search
+// to find the critical point.
+//
 pub fn part2(_input: &str) -> String {
     "World".to_string()
 }
