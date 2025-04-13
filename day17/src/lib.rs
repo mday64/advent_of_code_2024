@@ -89,7 +89,7 @@ fn parse_input(input: &str) -> IResult<&str, Computer> {
         delimited(tag("Register B: "), complete::u64, newline),
         delimited(tag("Register C: "), complete::u64, pair(newline, newline)),
         delimited(tag("Program: "), separated_list1(tag(","), complete::u8), newline)
-    )).parse(input)?;
+    )).parse_complete(input)?;
     Ok((remaining, Computer::new(reg_a, reg_b, reg_c, program)))
 }
 
