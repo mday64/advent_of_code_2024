@@ -10,16 +10,13 @@ fn parse_input(input: &str) -> IResult<&str, (Vec<&str>, Vec<&str>)> {
     Ok((remaining, (towels, patterns)))
 }
 
-fn pattern_from_towels(pattern: &str, towels: &[&str]) -> bool {
-    if pattern.is_empty() { return true }
-    let result = towels.iter().any(|t| pattern.starts_with(t) && pattern_from_towels(&pattern[t.len()..], towels));
-    // eprintln!("pattern: {pattern} -> {result}");
-    result
-}
-
 pub fn part1(input: &str) -> usize {
-    let (_remaining, (towels, patterns)) = parse_input(input).expect("parse");
+    fn pattern_from_towels(pattern: &str, towels: &[&str]) -> bool {
+        if pattern.is_empty() { return true }
+        towels.iter().any(|t| pattern.starts_with(t) && pattern_from_towels(&pattern[t.len()..], towels))
+    }
 
+    let (_remaining, (towels, patterns)) = parse_input(input).expect("parse");
     patterns.iter().filter(|p| pattern_from_towels(p, &towels)).count()
 }
 
