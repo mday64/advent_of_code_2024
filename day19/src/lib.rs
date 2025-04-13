@@ -20,8 +20,20 @@ pub fn part1(input: &str) -> usize {
     patterns.iter().filter(|p| pattern_from_towels(p, &towels)).count()
 }
 
-pub fn part2(_input: &str) -> String {
-    "World".to_string()
+pub fn part2(input: &str) -> usize {
+    fn pattern_from_towels(pattern: &str, towels: &[&str]) -> usize {
+        if pattern.is_empty() { return 1 }
+        towels.iter().map(|t|
+            if let Some(tail) = pattern.strip_prefix(t) {
+                pattern_from_towels(tail, towels)
+            } else {
+                0
+            }
+        ).sum()
+    }
+
+    let (_remaining, (towels, patterns)) = parse_input(input).expect("parse");
+    patterns.iter().map(|p| pattern_from_towels(p, &towels)).sum()
 }
 
 #[test]
@@ -43,8 +55,19 @@ bbrgwb
 
 #[test]
 fn test_part2() {
-    let input = "Hello, World!";
-    assert_eq!(part2(input), "World");
+    let input = "\
+r, wr, b, g, bwu, rb, gb, br
+
+brwrr
+bggr
+gbbr
+rrbgbr
+ubwu
+bwurrg
+brgr
+bbrgwb
+";
+    assert_eq!(part2(input), 16);
 }
 
 #[cfg(test)]
