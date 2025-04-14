@@ -1,0 +1,14 @@
+[package]
+name = "day20"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rustc-hash = "2.1.1"
+
+[dev-dependencies]
+divan = "0.1.17"
+
+[[bench]]
+name = "benchmark"
+harness = false
