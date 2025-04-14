@@ -51,7 +51,34 @@ pub fn part2(input: &str) -> usize {
     part2_limit(input, 100)
 }
 pub fn part2_limit(input: &str, limit: usize) -> usize {
-    todo!()
+    let (start, end, track) = parse_input(input);
+    let distances = solve_maze(start, end, track);
+
+    //
+    // And now we try cheating.  We have to consider a much wider
+    // group of "neighbors" than in part 1.  I'm going to brute force
+    // by considering all points with a Manhattan distance of 20 or less.
+    //
+    let max_dist: Row = 20;
+
+    let mut result = 0;
+    for (&(row, col), dist) in &distances {
+        for d_row in -max_dist..=max_dist {
+            let max_col_dist: Col = max_dist - d_row.abs();
+            for d_col in -max_col_dist..=max_col_dist {
+                let neighbor = (row+d_row, col+d_col);
+                let total_dist = (d_row.abs() + d_col.abs()) as usize;
+
+                if let Some(&d) = distances.get(&neighbor) {
+                    if d >= dist + total_dist + limit {
+                        result += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    result
 }
 
 //
@@ -166,5 +193,5 @@ fn test_part1_full() {
 
 #[test]
 fn test_part2_full() {
-    assert_eq!(part2(FULL_INPUT), 1485);
+    assert_eq!(part2(FULL_INPUT), 1027501);
 }
