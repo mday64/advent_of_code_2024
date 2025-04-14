@@ -1,5 +1,9 @@
 use rustc_hash::{FxHashMap, FxHashSet};
 
+type Row = isize;
+type Col = isize;
+type Coord = (Row, Col);
+
 //
 // Oooh!  This is an interesting one!
 //
@@ -15,8 +19,45 @@ use rustc_hash::{FxHashMap, FxHashSet};
 pub fn part1(input: &str) -> usize {
     part1_limit(input, 100)
 }
-pub fn part1_limit(input: &str, limit: isize) -> usize {
-    // Parse the input to build up the track, and find the start and end
+pub fn part1_limit(input: &str, limit: usize) -> usize {
+    let (start, end, track) = parse_input(input);
+    let distances = solve_maze(start, end, track);
+
+    //
+    // And now we try cheating.
+    //
+    let mut result = 0;
+    for (&(row, col), dist) in &distances {
+        for neighbor in [
+            (row-2, col), (row+2, col), (row, col-2), (row, col+2),
+            (row-1, col-1), (row+1, col-1), (row-1, col-1), (row-1, col+1)
+        ] {
+            if let Some(&d) = distances.get(&neighbor) {
+                if d >= dist + 2 + limit {
+                    // eprintln!("start={:?} end={:?} saves {}", (row, col), neighbor, d - dist - 2);
+                    result += 1;
+                }
+            }
+        }
+    }
+
+    result
+}
+
+//
+// My guess was wrong.  A "cheat" can be up to (and incuding) 20 steps.
+//
+pub fn part2(input: &str) -> usize {
+    part2_limit(input, 100)
+}
+pub fn part2_limit(input: &str, limit: usize) -> usize {
+    todo!()
+}
+
+//
+// Parse the input string and return (start, end, track)
+//
+fn parse_input(input: &str) -> (Coord, Coord, FxHashSet<Coord>) {
     let mut track = FxHashSet::default();
     let mut start = None;
     let mut end = None;
@@ -42,8 +83,10 @@ pub fn part1_limit(input: &str, limit: isize) -> usize {
     let end = end.expect("no end?");
     assert_ne!(start, end);
 
-    // "Solve" the maze to find the distance (number of steps) from the start
-    // to each point on the track.
+    (start, end, track)
+}
+
+fn solve_maze(start: Coord, end: Coord, track: FxHashSet<Coord>) -> FxHashMap<Coord, usize> {
     let mut distances = FxHashMap::default();
     let mut prev = (0, 0);      // this is a wall; didn't want to hassle with Option
     let mut curr = start;
@@ -66,29 +109,7 @@ pub fn part1_limit(input: &str, limit: isize) -> usize {
         }
     }
 
-    //
-    // And now we try cheating.
-    //
-    let mut result = 0;
-    for (&(row, col), dist) in &distances {
-        for neighbor in [
-            (row-2, col), (row+2, col), (row, col-2), (row, col+2),
-            (row-1, col-1), (row+1, col-1), (row-1, col-1), (row-1, col+1)
-        ] {
-            if let Some(&d) = distances.get(&neighbor) {
-                if d >= dist + 2 + limit {
-                    // eprintln!("start={:?} end={:?} saves {}", (row, col), neighbor, d - dist - 2);
-                    result += 1;
-                }
-            }
-        }
-    }
-
-    result
-}
-
-pub fn part2(_input: &str) -> String {
-    "World".to_string()
+    distances
 }
 
 #[test]
@@ -115,8 +136,24 @@ fn test_part1() {
 
 #[test]
 fn test_part2() {
-    let input = "Hello, World!";
-    assert_eq!(part2(input), "World");
+    let input = "\
+###############
+#...#...#.....#
+#.#.#.#.#.###.#
+#S#...#.#.#...#
+#######.#.#.###
+#######.#.#...#
+#######.#.###.#
+###..E#...#...#
+###.#######.###
+#...###...#...#
+#.#####.#.###.#
+#.#...#.#.#...#
+#.#.#.#.#.#.###
+#...#...#...###
+###############
+";
+    assert_eq!(part2_limit(input, 71), 22+4+3);
 }
 
 #[cfg(test)]
@@ -125,4 +162,9 @@ static FULL_INPUT: &str = include_str!("../input.txt");
 #[test]
 fn test_part1_full() {
     assert_eq!(part1(FULL_INPUT), 1485);
+}
+
+#[test]
+fn test_part2_full() {
+    assert_eq!(part2(FULL_INPUT), 1485);
 }
