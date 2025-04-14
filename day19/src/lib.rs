@@ -27,7 +27,7 @@ pub fn part1(input: &str) -> usize {
 //
 // Let's try a dynamic programming approach.
 //
-pub fn part2(input: &str) -> usize {
+pub fn part2_dynamic(input: &str) -> usize {
     let (_remaining, (towels, patterns)) = parse_input(input).expect("parse");
     patterns.iter().map(|p| {
         let mut cache = HashMap::<&str,usize>::new();
@@ -48,6 +48,33 @@ pub fn part2(input: &str) -> usize {
         *cache.get(p).unwrap()
     }).sum()
 }
+
+pub fn part2_memoize(input: &str) -> usize {
+    fn pattern_from_towels<'a>(pattern: &'a str, towels: &[&str], cache: &mut HashMap<&'a str,usize>) -> usize {
+        if pattern.is_empty() {
+            return 1;
+        }
+        if let Some(&v) = cache.get(pattern) {
+            return v;
+        }
+
+        let v = towels.iter().map(|t|
+            if let Some(tail) = pattern.strip_prefix(t) {
+                pattern_from_towels(tail, towels, cache)
+            } else {
+                0
+            }
+        ).sum();
+        cache.insert(pattern, v);
+        v
+    }
+
+    let (_remaining, (towels, patterns)) = parse_input(input).expect("parse");
+    let mut cache = HashMap::default();
+    patterns.iter().map(|p| pattern_from_towels(p, &towels, &mut cache)).sum()
+}
+
+pub use part2_memoize as part2;
 
 #[test]
 fn test_part1() {

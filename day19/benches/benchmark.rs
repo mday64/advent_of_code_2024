@@ -1,4 +1,4 @@
-use day19::{ part1, part2 };
+use day19::{ part1, part2_memoize, part2_dynamic };
 
 fn main() {
     divan::main();
@@ -12,6 +12,11 @@ fn bench_part1() {
 }
 
 #[divan::bench]
-fn bench_part2() {
-    part2(INPUT);
+fn bench_part2_dynamic() {
+    part2_dynamic(INPUT);
+}
+
+#[divan::bench]
+fn bench_part2_memoize() {
+    part2_memoize(INPUT);
 }
