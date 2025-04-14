@@ -1,4 +1,4 @@
-use day20::{ part1, part2 };
+use day20::{ part1, part2_limit_v1, part2_limit_v2 };
 
 fn main() {
     divan::main();
@@ -12,6 +12,11 @@ fn bench_part1() {
 }
 
 #[divan::bench]
-fn bench_part2() {
-    part2(INPUT);
+fn bench_part2_limit() {
+    part2_limit_v1(INPUT, 100);
+}
+
+#[divan::bench]
+fn bench_part2_v2() {
+    part2_limit_v2(INPUT, 100);
 }

@@ -48,9 +48,9 @@ pub fn part1_limit(input: &str, limit: usize) -> usize {
 // My guess was wrong.  A "cheat" can be up to (and incuding) 20 steps.
 //
 pub fn part2(input: &str) -> usize {
-    part2_limit(input, 100)
+    part2_limit_v2(input, 100)
 }
-pub fn part2_limit(input: &str, limit: usize) -> usize {
+pub fn part2_limit_v1(input: &str, limit: usize) -> usize {
     let (start, end, track) = parse_input(input);
     let distances = solve_maze(start, end, track);
 
@@ -78,6 +78,34 @@ pub fn part2_limit(input: &str, limit: usize) -> usize {
         }
     }
 
+    result
+}
+
+//
+// Try a different approach:
+//  * Build a list of coordinates for the full (no cheats) path
+//  * For each coordinate on the path, iterate over the coordinates
+//    far enough ahead on the path (based on `limit`), and see if
+//    their Manhattan distance is small enough.
+//
+pub fn part2_limit_v2(input: &str, limit: usize) -> usize {
+    let (start, end, track) = parse_input(input);
+    let path = solve_maze_list(start, end, track);
+
+    let mut result = 0;
+
+    // A "cheat" is 1..=20 steps, so we need to consider points on the
+    // path that have indices at least `limit+1` apart.  Then filter
+    // out ones where the Manhattan distance is too large, or the
+    // offset minus Manhattan distance is too small.
+    for (start_index, start) in path[..path.len()-limit].iter().enumerate() {
+        for (end_index, end) in path[start_index+limit..].iter().enumerate() {
+            let dist = ((start.0 - end.0).abs() + (start.1 - end.1).abs()) as usize;
+            if dist <= 20 && end_index >= dist {
+                result += 1;
+            }
+        }
+    }
     result
 }
 
@@ -139,6 +167,30 @@ fn solve_maze(start: Coord, end: Coord, track: FxHashSet<Coord>) -> FxHashMap<Co
     distances
 }
 
+fn solve_maze_list(start: Coord, end: Coord, track: FxHashSet<Coord>) -> Vec<Coord> {
+    let mut coordinates = Vec::new();
+    let mut prev = (0, 0);      // this is a wall; didn't want to hassle with Option
+    let mut curr = start;
+    coordinates.push(start);
+    loop {
+        // Take a step, but not back to `prev`
+        for neighbor in [(curr.0-1, curr.1), (curr.0+1, curr.1), (curr.0, curr.1-1), (curr.0, curr.1+1)] {
+            if neighbor != prev && track.contains(&neighbor) {
+                prev = curr;
+                curr = neighbor;
+                break;
+            }
+        }
+        coordinates.push(curr);
+
+        if curr == end {
+            break;
+        }
+    }
+
+    coordinates
+}
+
 #[test]
 fn test_part1() {
     let input = "\
@@ -180,7 +232,8 @@ fn test_part2() {
 #...#...#...###
 ###############
 ";
-    assert_eq!(part2_limit(input, 71), 22+4+3);
+    assert_eq!(part2_limit_v1(input, 71), 22+4+3);
+    assert_eq!(part2_limit_v2(input, 71), 22+4+3);
 }
 
 #[cfg(test)]
@@ -192,6 +245,11 @@ fn test_part1_full() {
 }
 
 #[test]
-fn test_part2_full() {
-    assert_eq!(part2(FULL_INPUT), 1027501);
+fn test_part2_v1_full() {
+    assert_eq!(part2_limit_v1(FULL_INPUT, 100), 1027501);
+}
+
+#[test]
+fn test_part2_v2_full() {
+    assert_eq!(part2_limit_v2(FULL_INPUT, 100), 1027501);
 }
