@@ -190,9 +190,10 @@ fn presses_for_directional_code(code: &str) -> String {
         // the missing key position.
         if dest_col == 0 {
             // Must go down first!
-            while dest_row < cur_row {
+            while dest_row > cur_row {
                 result.push('v');
                 cur_row += 1;
+                if cur_row == 0 && cur_col == 0 { panic!("Invalid location!"); }
             }
         }
         if cur_col == 0 {
@@ -200,6 +201,7 @@ fn presses_for_directional_code(code: &str) -> String {
             while dest_col > cur_col {
                 result.push('>');
                 cur_col += 1;
+                if cur_row == 0 && cur_col == 0 { panic!("Invalid location!"); }
             }
         }
 
@@ -208,18 +210,22 @@ fn presses_for_directional_code(code: &str) -> String {
         while dest_col < cur_col {
             result.push('<');
             cur_col -= 1;
+            if cur_row == 0 && cur_col == 0 { panic!("Invalid location!"); }
         }
         while dest_row > cur_row {
             result.push('v');
             cur_row += 1;
+            if cur_row == 0 && cur_col == 0 { panic!("Invalid location!"); }
         }
         while dest_col > cur_col {
             result.push('>');
             cur_col += 1;
+            if cur_row == 0 && cur_col == 0 { panic!("Invalid location!"); }
         }
         while dest_row < cur_row {
             result.push('^');
             cur_row -= 1;
+            if cur_row == 0 && cur_col == 0 { panic!("Invalid location!"); }
         }
 
         // Need to press our "A" button to cause us to press the
