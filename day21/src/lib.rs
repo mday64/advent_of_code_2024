@@ -96,17 +96,16 @@ pub fn part1(input: &str) -> usize {
 // and Part 2 has 25.  I think 25 passes is correct.  I modified this code
 // to loop 0..2, and it in fact generates the same answer as part 1.
 //
-pub fn part2(input: &str) -> usize {
+fn part2_inner(input: &str, num_robots: u32) -> usize {
+    let mut cache = HashMap::new();
     input.lines().map(|line| {
         let numeric_code = line.strip_suffix('A').unwrap().parse::<usize>().unwrap();
-        let mut directional_code = presses_for_numeric_code(line);
-        for i in 0..25 {
-            eprint!("{i}...");
-            directional_code = presses_for_directional_code(&directional_code);
-            eprintln!("{}", directional_code.len());
-        }
-        numeric_code * directional_code.len()
+        let directional_code = presses_for_numeric_code(line);
+        numeric_code * num_presses_for_directional_code(directional_code, num_robots, &mut cache)
     }).sum()
+}
+pub fn part2(input: &str) -> usize {
+    part2_inner(input, 25)
 }
 
 //
@@ -236,6 +235,34 @@ fn presses_for_directional_code(code: &str) -> String {
     result
 }
 
+fn num_presses_for_directional_code(code: String, num_robots: u32, cache: &mut HashMap<(String, u32), usize>) -> usize {
+    if let Some(n) = cache.get(&(code.clone(), num_robots)) {
+        return *n;
+    }
+    if num_robots == 0 {
+        let len = code.len();
+        cache.insert((code, 0), len);
+        return len;
+    }
+
+    let presses = presses_for_directional_code(&code);
+
+    // Break `code` into a sequence of strings, each ending with "A".
+    let result = presses.split_inclusive('A')
+        .map(|s| num_presses_for_directional_code(s.to_owned(), num_robots-1, cache))
+        .sum();
+    
+    cache.insert((code, num_robots), result);
+
+    result
+}
+
+fn num_presses_for_code(code: &str, num_robots: u32) -> usize {
+    let mut cache = HashMap::new();
+    let directional_code = presses_for_numeric_code(code);
+    num_presses_for_directional_code(directional_code, num_robots, &mut cache)
+}
+
 static NUMERIC_KEYPAD: LazyLock<HashMap<char, (Row, Col)>> = LazyLock::new(||
     HashMap::from([
         ('A', (3,2)),
@@ -309,6 +336,59 @@ fn test_part1() {
     assert_eq!(part1(input), 126384);
 }
 
+#[test]
+fn test_part2_inner() {
+    let input = "\
+029A
+980A
+179A
+456A
+379A
+";
+    assert_eq!(part2_inner(input, 2), 126384);
+}
+
+#[test]
+fn test_num_presses_for_code_456() {
+    let code = "456A";
+    assert_eq!(num_presses_for_code(code, 0), 12);
+    assert_eq!(num_presses_for_code(code, 1), 26);
+    assert_eq!(num_presses_for_code(code, 2), 64);
+    assert_eq!(num_presses_for_code(code, 3), 162);
+    assert_eq!(num_presses_for_code(code, 4), 394);
+    assert_eq!(num_presses_for_code(code, 5), 988);     // This fails.  I'm getting 994.
+    assert_eq!(num_presses_for_code(code, 6), 2434);
+    assert_eq!(num_presses_for_code(code, 7), 6082);
+    assert_eq!(num_presses_for_code(code, 8), 15090);
+    assert_eq!(num_presses_for_code(code, 9), 37576);
+    assert_eq!(num_presses_for_code(code, 10), 93444);
+    assert_eq!(num_presses_for_code(code, 11), 232450);
+    assert_eq!(num_presses_for_code(code, 12), 578314);
+    assert_eq!(num_presses_for_code(code, 13), 1438450);
+    assert_eq!(num_presses_for_code(code, 14), 3578646);
+    assert_eq!(num_presses_for_code(code, 15), 8901822);
+    assert_eq!(num_presses_for_code(code, 16), 22145084);
+    assert_eq!(num_presses_for_code(code, 17), 55087898);
+    assert_eq!(num_presses_for_code(code, 18), 137038728);
+    assert_eq!(num_presses_for_code(code, 19), 340900864);
+    assert_eq!(num_presses_for_code(code, 20), 848032810);
+    assert_eq!(num_presses_for_code(code, 21), 2109590876);
+    assert_eq!(num_presses_for_code(code, 22), 5247866716);
+    assert_eq!(num_presses_for_code(code, 23), 13054736520);
+    assert_eq!(num_presses_for_code(code, 24), 32475283854);
+    assert_eq!(num_presses_for_code(code, 25), 80786362258);
+}
+
+#[test]
+fn test_part2_others() {
+    // My answers for all of these are too high
+    assert_eq!(num_presses_for_code("029A", 25), 82050061710);
+    assert_eq!(num_presses_for_code("980A", 25), 72242026390);
+    assert_eq!(num_presses_for_code("179A", 25), 81251039228);
+    assert_eq!(num_presses_for_code("456A", 25), 80786362258);
+    assert_eq!(num_presses_for_code("379A", 25), 77985628636);
+}
+
 #[cfg(test)]
 static FULL_INPUT: &str = include_str!("../input.txt");
 
@@ -319,5 +399,7 @@ fn test_part1_full() {
 
 #[test]
 fn test_part2_full() {
-    assert!(part2(FULL_INPUT) > 96631806002350);
+    let result = part2(FULL_INPUT);
+    assert!(result >  96_631_806_002_350);
+    assert!(result < 132_929_214_388_818);
 }
