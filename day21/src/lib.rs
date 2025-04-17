@@ -87,8 +87,26 @@ pub fn part1(input: &str) -> usize {
     }).sum()
 }
 
-pub fn part2(_input: &str) -> String {
-    "World".to_string()
+//
+// Brute force.  Peak memory usage is about 100GB, during the last pass
+// for each line of input.
+//
+// The web site says my answer is too low.  Am I doing one too few passes?
+// I don't think so.  Part 1 has two robots pressing on directional pads,
+// and Part 2 has 25.  I think 25 passes is correct.  I modified this code
+// to loop 0..2, and it in fact generates the same answer as part 1.
+//
+pub fn part2(input: &str) -> usize {
+    input.lines().map(|line| {
+        let numeric_code = line.strip_suffix('A').unwrap().parse::<usize>().unwrap();
+        let mut directional_code = presses_for_numeric_code(line);
+        for i in 0..25 {
+            eprint!("{i}...");
+            directional_code = presses_for_directional_code(&directional_code);
+            eprintln!("{}", directional_code.len());
+        }
+        numeric_code * directional_code.len()
+    }).sum()
 }
 
 //
@@ -285,16 +303,15 @@ fn test_part1() {
     assert_eq!(part1(input), 126384);
 }
 
-#[test]
-fn test_part2() {
-    let input = "Hello, World!";
-    assert_eq!(part2(input), "World");
-}
-
 #[cfg(test)]
 static FULL_INPUT: &str = include_str!("../input.txt");
 
 #[test]
 fn test_part1_full() {
     assert_eq!(part1(FULL_INPUT), 94284);
+}
+
+#[test]
+fn test_part2_full() {
+    assert!(part2(FULL_INPUT) > 96631806002350);
 }
