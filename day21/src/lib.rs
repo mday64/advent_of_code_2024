@@ -58,13 +58,31 @@ use std::{collections::HashMap, sync::LazyLock};
 // the performance of part 1?  Or would the cost of caching be worse
 // than the repeated calculations?
 //
+// The keypads:
+// +---+---+---+
+// | 7 | 8 | 9 |
+// +---+---+---+
+// | 4 | 5 | 6 |
+// +---+---+---+
+// | 1 | 2 | 3 |
+// +---+---+---+
+//     | 0 | A |
+//     +---+---+
+//
+//     +---+---+
+//     | ^ | A |
+// +---+---+---+
+// | < | v | > |
+// +---+---+---+
+//
+
 pub fn part1(input: &str) -> usize {
     input.lines().map(|line| {
         let code = line.strip_suffix('A').unwrap().parse::<usize>().unwrap();
-        let robot1 = presses_for_code(line, &NUMERIC_KEYPAD);
-        let robot2 = presses_for_code(&robot1, &DIRECTIONAL_KEYPAD);
-        let robot3 = presses_for_code(&robot2, &DIRECTIONAL_KEYPAD);
-        println!("{line}\n{robot1}\n{robot2}\n{robot3}\n");
+        let robot1 = presses_for_numeric_code(line);
+        let robot2 = presses_for_directional_code(&robot1);
+        let robot3 = presses_for_directional_code(&robot2);
+        // println!("{line}\n{robot1}\n{robot2}\n{robot3}\n");
         code * robot3.len()
     }).sum()
 }
@@ -82,20 +100,46 @@ pub fn part2(_input: &str) -> String {
 //
 type Row = i32;
 type Col = i32;
-fn presses_for_code(code: &str, keypad: &HashMap<char, (Row, Col)>) -> String {
+
+fn presses_for_numeric_code(code: &str) -> String {
     assert!(code.ends_with("A"));
 
     let mut result = String::new();
 
     // Get the robot arm's current X/Y location above the keypad ("A" key)
-    let (mut cur_row, mut cur_col) = keypad.get(&'A').unwrap();
+    let (mut cur_row, mut cur_col) = NUMERIC_KEYPAD.get(&'A').unwrap();
 
     for ch in code.chars() {
         // Get the X/Y location of the key in `ch`
-        let &(dest_row, dest_col) = keypad.get(&ch).unwrap();
+        let &(dest_row, dest_col) = NUMERIC_KEYPAD.get(&ch).unwrap();
+
+        // See if we need to move in a different order to avoid
+        // the missing key position.
+        if cur_row == 3 && dest_col == 0 {
+            // Must go up first!
+            while dest_row < cur_row {
+                result.push('^');
+                cur_row -= 1;
+            }
+        }
+        if cur_col == 0 && dest_row == 3 {
+            // Must go right first!
+            while dest_col > cur_col {
+                result.push('>');
+                cur_col += 1;
+            }
+        }
 
         // Determine which moves, and what order, are needed to move
-        // to that position.  Move in order: right, up, down, left.
+        // to that position.  Move in order: left, down, right, up.
+        while dest_col < cur_col {
+            result.push('<');
+            cur_col -= 1;
+        }
+        while dest_row > cur_row {
+            result.push('v');
+            cur_row += 1;
+        }
         while dest_col > cur_col {
             result.push('>');
             cur_col += 1;
@@ -104,13 +148,60 @@ fn presses_for_code(code: &str, keypad: &HashMap<char, (Row, Col)>) -> String {
             result.push('^');
             cur_row -= 1;
         }
+
+        // Need to press our "A" button to cause us to press the
+        // `ch` button in front of us.
+        result.push('A');
+    }
+
+    result
+}
+
+fn presses_for_directional_code(code: &str) -> String {
+    assert!(code.ends_with("A"));
+
+    let mut result = String::new();
+
+    // Get the robot arm's current X/Y location above the keypad ("A" key)
+    let (mut cur_row, mut cur_col) = DIRECTIONAL_KEYPAD.get(&'A').unwrap();
+    for ch in code.chars() {
+        // Get the X/Y location of the key in `ch`
+        let &(dest_row, dest_col) = DIRECTIONAL_KEYPAD.get(&ch).unwrap();
+
+        // See if we need to move in a different order to avoid
+        // the missing key position.
+        if dest_col == 0 {
+            // Must go down first!
+            while dest_row < cur_row {
+                result.push('v');
+                cur_row += 1;
+            }
+        }
+        if cur_col == 0 {
+            // Must go right first!
+            while dest_col > cur_col {
+                result.push('>');
+                cur_col += 1;
+            }
+        }
+
+        // Determine which moves, and what order, are needed to move
+        // to that position.  Move in order: left, down, right, up.
+        while dest_col < cur_col {
+            result.push('<');
+            cur_col -= 1;
+        }
         while dest_row > cur_row {
             result.push('v');
             cur_row += 1;
         }
-        while dest_col < cur_col {
-            result.push('<');
-            cur_col -= 1;
+        while dest_col > cur_col {
+            result.push('>');
+            cur_col += 1;
+        }
+        while dest_row < cur_row {
+            result.push('^');
+            cur_row -= 1;
         }
 
         // Need to press our "A" button to cause us to press the
@@ -147,32 +238,6 @@ static DIRECTIONAL_KEYPAD: LazyLock<HashMap<char, (Row, Col)>> = LazyLock::new(|
     ])
 );
 
-#[test]
-#[allow(non_snake_case)]
-fn code029A_presses() {
-    assert_eq!(presses_for_code("029A", &NUMERIC_KEYPAD), "<A^A>^^AvvvA");
-}
-
-#[test]
-#[allow(non_snake_case)]
-fn code029A_presses_two() {
-    let robot_one = presses_for_code("029A", &NUMERIC_KEYPAD);
-    assert_eq!(robot_one, "<A^A>^^AvvvA");
-    let robot_two = presses_for_code(&robot_one, &DIRECTIONAL_KEYPAD);
-    assert_eq!(robot_two, "v<<A>>^A<A>AvA^<AA>Av<AAA>^A");
-}
-
-#[test]
-#[allow(non_snake_case)]
-fn code029A_presses_three() {
-    let robot_one = presses_for_code("029A", &NUMERIC_KEYPAD);
-    assert_eq!(robot_one, "<A^A>^^AvvvA");
-    let robot_two = presses_for_code(&robot_one, &DIRECTIONAL_KEYPAD);
-    assert_eq!(robot_two, "v<<A>>^A<A>AvA^<AA>Av<AAA>^A");
-    let robot_three = presses_for_code(&robot_two, &DIRECTIONAL_KEYPAD);
-    assert_eq!(robot_three, "v<A<AA>>^AvAA^<A>Av<<A>>^AvA^Av<A>^A<Av<A>>^AAvA^Av<A<A>>^AAAvA^<A>A");
-}
-
 //
 // The code as currently written gives a sub-optimal solution for "379A".
 // I think that in some of the cases where the robot needs to move both
@@ -180,7 +245,24 @@ fn code029A_presses_three() {
 // travel for the next robot in the sequence.
 //
 // In this case, could it be the transition between "3" and "7"?  Should
-// I go left, then up?
+// I go left, then up?  [Yes!  Robot two's sequence is the same length,
+// but the different order allows robot three to generate a shorter
+// sequence.]
+//
+// Is it that "<^" generates a shorter sequence than "^<", or is it
+// "A<" followed by "^A" versus "A^" followed by "<A"?  I guess I could
+// try "A<^A" and "A^<A".
+//
+// I think the difference is that with "A<^A", robot two does "v<<" to
+// get from "A" to "<", which means robot three can move over "<"
+// (expensive) and press "A" twice (inexpensive).  But with "A^<A",
+// robot two moves "<" and "v<", which requires an additional left
+// and right movement to get back to "<".
+//
+// I suspect that this means that when we need to move both horizontally
+// and vertically, that we should prefer left (furthest from A), then
+// down (next furthest from A), then up or right (I don't think the
+// order matters).
 //
 #[test]
 #[allow(non_snake_case)]
@@ -207,4 +289,12 @@ fn test_part1() {
 fn test_part2() {
     let input = "Hello, World!";
     assert_eq!(part2(input), "World");
+}
+
+#[cfg(test)]
+static FULL_INPUT: &str = include_str!("../input.txt");
+
+#[test]
+fn test_part1_full() {
+    assert_eq!(part1(FULL_INPUT), 94284);
 }
