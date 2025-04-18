@@ -235,6 +235,14 @@ fn presses_for_directional_code(code: &str) -> String {
     result
 }
 
+fn presses_for_code_brute(code: &str, num_robots: u32) -> String {
+    let mut presses = presses_for_numeric_code(code);
+    for _ in 0..num_robots {
+        presses = presses_for_directional_code(&presses);
+    }
+    presses
+}
+
 fn num_presses_for_directional_code(code: String, num_robots: u32, cache: &mut HashMap<(String, u32), usize>) -> usize {
     if let Some(n) = cache.get(&(code.clone(), num_robots)) {
         return *n;
@@ -315,6 +323,11 @@ static DIRECTIONAL_KEYPAD: LazyLock<HashMap<char, (Row, Col)>> = LazyLock::new(|
 // down (next furthest from A), then up or right (I don't think the
 // order matters).
 //
+// Using the tests below (with values supplied on Reddit), it seems that
+// my general solution fails for code "456A" with 5 robots pressing
+// directional keypads.  I haven't investigated to see what is going on,
+// and why always choosing directions in the same order isn't working.
+//
 #[test]
 #[allow(non_snake_case)]
 fn test_part1_code379A() {
@@ -346,6 +359,37 @@ fn test_part2_inner() {
 379A
 ";
     assert_eq!(part2_inner(input, 2), 126384);
+}
+
+#[test]
+fn test_presses_for_code_brute_456() {
+    let code = "456A";
+    assert_eq!(presses_for_code_brute(code, 0).len(), 12);
+    assert_eq!(presses_for_code_brute(code, 1).len(), 26);
+    assert_eq!(presses_for_code_brute(code, 2).len(), 64);
+    assert_eq!(presses_for_code_brute(code, 3).len(), 162);
+    assert_eq!(presses_for_code_brute(code, 4).len(), 394);
+    assert_eq!(presses_for_code_brute(code, 5).len(), 988);     // This fails.  I'm getting 994.
+    assert_eq!(presses_for_code_brute(code, 6).len(), 2434);
+    assert_eq!(presses_for_code_brute(code, 7).len(), 6082);
+    assert_eq!(presses_for_code_brute(code, 8).len(), 15090);
+    assert_eq!(presses_for_code_brute(code, 9).len(), 37576);
+    assert_eq!(presses_for_code_brute(code, 10).len(), 93444);
+    assert_eq!(presses_for_code_brute(code, 11).len(), 232450);
+    assert_eq!(presses_for_code_brute(code, 12).len(), 578314);
+    assert_eq!(presses_for_code_brute(code, 13).len(), 1438450);
+    assert_eq!(presses_for_code_brute(code, 14).len(), 3578646);
+    assert_eq!(presses_for_code_brute(code, 15).len(), 8901822);
+    assert_eq!(presses_for_code_brute(code, 16).len(), 22145084);
+    assert_eq!(presses_for_code_brute(code, 17).len(), 55087898);
+    assert_eq!(presses_for_code_brute(code, 18).len(), 137038728);
+    assert_eq!(presses_for_code_brute(code, 19).len(), 340900864);
+    assert_eq!(presses_for_code_brute(code, 20).len(), 848032810);
+    assert_eq!(presses_for_code_brute(code, 21).len(), 2109590876);
+    assert_eq!(presses_for_code_brute(code, 22).len(), 5247866716);
+    assert_eq!(presses_for_code_brute(code, 23).len(), 13054736520);
+    assert_eq!(presses_for_code_brute(code, 24).len(), 32475283854);
+    assert_eq!(presses_for_code_brute(code, 25).len(), 80786362258);
 }
 
 #[test]
