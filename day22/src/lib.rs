@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use itertools::Itertools;
+
 pub fn part1(input: &str) -> u64 {
     input.lines()
         .map(|line| line.parse::<u64>().expect("u64"))
@@ -11,16 +14,60 @@ pub fn part1(input: &str) -> u64 {
         .sum()
 }
 
-pub fn part2(_input: &str) -> String {
-    "World".to_string()
-}
+pub fn part2(input: &str) -> u32 {
+    let buyers: Vec<_> = input.lines()
+        .map(|line| line.parse::<u64>().expect("u64"))
+        .map(prices_and_changes)
+        .collect();
+    
+    // Build a map of all unique sequences of 4 price changes to the list
+    // of prices for those changes.
+    let mut all_price_changes = HashMap::new();
+    for buyer in &buyers {
+        let mut buyer_first_price_changes = HashMap::new();
+        // Insert the FIRST price for any sequence of changes
+        for ((_,a), (_,b), (_,c), (price,d)) in buyer.iter().tuple_windows() {
+            buyer_first_price_changes.entry((a, b, c, d)).or_insert(price);
+        }
 
+        // Merge this buyer's prices into all_price_changes
+        for (changes, price) in buyer_first_price_changes {
+            all_price_changes.entry(changes)
+                .or_insert_with(Vec::new)
+                .push(price);
+        }
+    }
+
+    // For every sequence of price changes, find the price (if any)
+    // associated with the first occurence of that sequence of changes.
+    all_price_changes.values()
+        .map(|vec| vec.iter().map(|v| **v as u32).sum())
+        .max().unwrap()
+}
 
 fn next_secret_number(secret: u64) -> u64 {
     let mut result = (secret ^ (secret << 6)) & 16777215;
     result = (result ^ (result >> 5)) & 16777215;
     result = (result ^ (result << 11)) & 16777215;
     result
+}
+
+type Price = i8;
+type PriceChange = i8;
+
+fn prices_and_changes(initial: u64) -> Vec<(Price, PriceChange)> {
+    let mut last_secret = initial;
+    let mut last_price = (last_secret % 10) as Price;
+    (0..2000).map(|_| {
+            let secret = next_secret_number(last_secret);
+            let price = (secret % 10) as Price;
+            let change = price - last_price;
+            let item = (price, change);
+            last_secret = secret;
+            last_price = price;
+            item
+    })
+    .collect()
 }
 
 #[test]
@@ -48,6 +95,6 @@ fn test_part1() {
 
 #[test]
 fn test_part2() {
-    let input = "Hello, World!";
-    assert_eq!(part2(input), "World");
+    let input = "1\n2\n3\n2024\n";
+    assert_eq!(part2(input), 23);
 }
