@@ -1,4 +1,4 @@
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 use itertools::Itertools;
 
 pub fn part1(input: &str) -> u64 {
@@ -24,15 +24,12 @@ pub fn part2(input: &str) -> u32 {
     // of prices for those changes.
     let mut all_price_changes = FxHashMap::default();
     for buyer in &buyers {
-        let mut buyer_first_price_changes = FxHashMap::default();
+        let mut buyer_price_changes = FxHashSet::default();
         // Insert the FIRST price for any sequence of changes
         for ((_,a), (_,b), (_,c), (price,d)) in buyer.iter().tuple_windows() {
-            buyer_first_price_changes.entry((a, b, c, d)).or_insert(price);
-        }
-
-        // Merge this buyer's prices into all_price_changes
-        for (changes, price) in buyer_first_price_changes {
-            *all_price_changes.entry(changes).or_insert(0u32) += *price as u32;
+            if buyer_price_changes.insert((a, b, c, d)) {
+                *all_price_changes.entry((a, b, c, d)).or_insert(0u32) += *price as u32;
+            }
         }
     }
 
