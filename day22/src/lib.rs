@@ -32,17 +32,13 @@ pub fn part2(input: &str) -> u32 {
 
         // Merge this buyer's prices into all_price_changes
         for (changes, price) in buyer_first_price_changes {
-            all_price_changes.entry(changes)
-                .or_insert_with(Vec::new)
-                .push(price);
+            *all_price_changes.entry(changes).or_insert(0u32) += *price as u32;
         }
     }
 
     // For every sequence of price changes, find the price (if any)
     // associated with the first occurence of that sequence of changes.
-    all_price_changes.values()
-        .map(|vec| vec.iter().map(|v| **v as u32).sum())
-        .max().unwrap()
+    *all_price_changes.values().max().unwrap()
 }
 
 fn next_secret_number(secret: u64) -> u64 {
@@ -97,4 +93,17 @@ fn test_part1() {
 fn test_part2() {
     let input = "1\n2\n3\n2024\n";
     assert_eq!(part2(input), 23);
+}
+
+#[cfg(test)]
+static FULL_INPUT: &str = include_str!("../input.txt");
+
+#[test]
+fn test_part1_full() {
+    assert_eq!(part1(FULL_INPUT), 14392541715);
+}
+
+#[test]
+fn test_part2_full() {
+    assert_eq!(part2(FULL_INPUT), 1628);
 }
