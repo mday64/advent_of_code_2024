@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 use itertools::Itertools;
 
 pub fn part1(input: &str) -> u64 {
@@ -22,9 +22,9 @@ pub fn part2(input: &str) -> u32 {
     
     // Build a map of all unique sequences of 4 price changes to the list
     // of prices for those changes.
-    let mut all_price_changes = HashMap::new();
+    let mut all_price_changes = FxHashMap::default();
     for buyer in &buyers {
-        let mut buyer_first_price_changes = HashMap::new();
+        let mut buyer_first_price_changes = FxHashMap::default();
         // Insert the FIRST price for any sequence of changes
         for ((_,a), (_,b), (_,c), (price,d)) in buyer.iter().tuple_windows() {
             buyer_first_price_changes.entry((a, b, c, d)).or_insert(price);
