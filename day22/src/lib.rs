@@ -1,4 +1,5 @@
-use rustc_hash::{FxHashMap, FxHashSet};
+use std::collections::{HashMap,HashSet};
+use rustc_hash::FxBuildHasher;
 use itertools::Itertools;
 
 pub fn part1(input: &str) -> u64 {
@@ -22,16 +23,32 @@ pub fn part2(input: &str) -> u32 {
     
     // Build a map of all unique sequences of 4 price changes to the list
     // of prices for those changes.
-    let mut all_price_changes = FxHashMap::default();
+    //
+    // Preallocating the set helps a lot.  I used 2000 because that's the
+    // number of total price changes.  The number of sequences of 4 changes
+    // is 1997.  It turns out that there are very few duplicates, so this
+    // is a good upper bound.
+    //
+    // Preallocating the hash to a large capacity helps a little, if you can
+    // get a good upper bound.  Experimentally, the hashmap has 40_951 items,
+    // and a capacity of 41_000 gives about a 5% speedup.  But that feels like
+    // cheating.  I notice that it is a little less than 19*19*19*19/3 (where
+    // there are 19 possible values for the price change).  That still feels
+    // like cheating.  So, I'm not going to preallocate.
+    //
+    let mut all_price_changes = HashMap::with_hasher(FxBuildHasher);
     for buyer in &buyers {
-        let mut buyer_price_changes = FxHashSet::default();
+        let mut buyer_price_changes = HashSet::with_capacity_and_hasher(2000, FxBuildHasher);
         // Insert the FIRST price for any sequence of changes
         for ((_,a), (_,b), (_,c), (price,d)) in buyer.iter().tuple_windows() {
             if buyer_price_changes.insert((a, b, c, d)) {
                 *all_price_changes.entry((a, b, c, d)).or_insert(0u32) += *price as u32;
             }
         }
+        // println!("buyer price changes = {}", buyer_price_changes.len());
     }
+
+    // println!("There are {} price change sequences", all_price_changes.len());
 
     // For every sequence of price changes, find the price (if any)
     // associated with the first occurence of that sequence of changes.
