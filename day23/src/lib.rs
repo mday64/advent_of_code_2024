@@ -161,3 +161,16 @@ td-yn
 ";
     assert_eq!(part2(input), "co,de,ka,ta");
 }
+
+#[cfg(test)]
+static FULL_INPUT: &str = include_str!("../input.txt");
+
+#[test]
+fn test_part1_full() {
+    assert_eq!(part1(FULL_INPUT), 1370);
+}
+
+#[test]
+fn test_part2_full() {
+    assert_eq!(part2(FULL_INPUT), "am,au,be,cm,fo,ha,hh,im,nt,os,qz,rr,so");
+}
