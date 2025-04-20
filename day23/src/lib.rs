@@ -1,4 +1,7 @@
 use std::collections::{HashMap, HashSet};
+use rustc_hash::FxHashSet;
+
+pub use part2_greedy as part2;
 
 pub fn part1(input: &str) -> usize {
     let mut connections: HashMap<&str, HashSet<&str>> = HashMap::new();
@@ -43,7 +46,7 @@ pub fn part1(input: &str) -> usize {
 // I will store a strongly connected component as a Vec<&str>, with the
 // strings in sorted order.
 //
-pub fn part2(input: &str) -> String {
+pub fn part2_orig(input: &str) -> String {
     let mut connections: HashMap<&str, HashSet<&str>> = HashMap::new();
     let mut connected_components: Vec<Vec<&str>> = Vec::new();
     let mut nodes = HashSet::new();
@@ -82,6 +85,82 @@ pub fn part2(input: &str) -> String {
 
     assert_eq!(connected_components.len(), 1);
     connected_components[0].join(",")
+}
+
+//
+// Same basic approach as part2_orig, but stores connections differently.
+//
+pub fn part2_incremental(input: &str) -> String {
+    let mut connections: FxHashSet<(&str, &str)> = FxHashSet::default();
+    let mut connected_components: Vec<Vec<&str>> = Vec::new();
+    let mut nodes = FxHashSet::default();
+    for line in input.lines() {
+        let (left, right) = line.split_once('-').expect("hyphen");
+        nodes.insert(left);
+        nodes.insert(right);
+        // Insert connections such that the strings point to "larger" strings
+        if left < right {
+            connections.insert((left, right));
+            connected_components.push(vec![left, right]);
+        } else {
+            connections.insert((right, left));
+            connected_components.push(vec![right, left]);
+        }
+    }
+
+    while connected_components.len() > 1 {
+        let mut larger = Vec::new();    // connected components of size N+1
+        for component in connected_components {
+            for node in &nodes {
+                // If every node in `component` is connected to `node`, then
+                // we can merge `node` into `component` to make a larger one.
+                if component.iter().all(|src| connections.contains(&(src,node))) {
+                    let mut temp = component.clone();
+                    temp.push(node);
+                    larger.push(temp);
+                }
+            }
+        }
+        connected_components = larger;
+    }
+
+    assert_eq!(connected_components.len(), 1);
+    connected_components[0].join(",")
+}
+
+pub fn part2_greedy(input: &str) -> String {
+    let mut connections: FxHashSet<(&str, &str)> = FxHashSet::default();
+    let mut nodes: FxHashSet<&str> = FxHashSet::default();
+
+    for line in input.lines() {
+        let (left, right) = line.split_once('-').expect("hyphen");
+        nodes.insert(left);
+        nodes.insert(right);
+        if left < right {
+            connections.insert((left, right));
+        } else {
+            connections.insert((right, left));
+        }
+    }
+    let mut nodes: Vec<&str> = nodes.into_iter().collect();
+    nodes.sort();
+
+    let mut components: Vec<Vec<&str>> = Vec::new();
+    for node in &nodes {
+        let mut merged: Vec<Vec<&str>> = Vec::new();
+        for component in &components {
+            if component.iter().all(|&other| connections.contains(&(other, node))) {
+                let mut temp = component.clone();
+                temp.push(node);
+                merged.push(temp);
+            }
+        }
+        components.append(&mut merged);
+        components.push(vec![node]);
+    }
+
+    let largest = components.iter().max_by_key(|component| component.len()).unwrap();
+    largest.join(",")
 }
 
 #[test]
@@ -124,7 +203,7 @@ td-yn
 }
 
 #[test]
-fn test_part2() {
+fn test_part2_orig() {
     let input = "\
 kh-tc
 qp-kh
@@ -159,7 +238,85 @@ wh-qp
 tb-vc
 td-yn
 ";
-    assert_eq!(part2(input), "co,de,ka,ta");
+    assert_eq!(part2_orig(input), "co,de,ka,ta");
+}
+
+#[test]
+fn test_part2_incremental() {
+    let input = "\
+kh-tc
+qp-kh
+de-cg
+ka-co
+yn-aq
+qp-ub
+cg-tb
+vc-aq
+tb-ka
+wh-tc
+yn-cg
+kh-ub
+ta-co
+de-co
+tc-td
+tb-wq
+wh-td
+ta-ka
+td-qp
+aq-cg
+wq-ub
+ub-vc
+de-ta
+wq-aq
+wq-vc
+wh-yn
+ka-de
+kh-ta
+co-tc
+wh-qp
+tb-vc
+td-yn
+";
+    assert_eq!(part2_incremental(input), "co,de,ka,ta");
+}
+
+#[test]
+fn test_part2_greedy() {
+    let input = "\
+kh-tc
+qp-kh
+de-cg
+ka-co
+yn-aq
+qp-ub
+cg-tb
+vc-aq
+tb-ka
+wh-tc
+yn-cg
+kh-ub
+ta-co
+de-co
+tc-td
+tb-wq
+wh-td
+ta-ka
+td-qp
+aq-cg
+wq-ub
+ub-vc
+de-ta
+wq-aq
+wq-vc
+wh-yn
+ka-de
+kh-ta
+co-tc
+wh-qp
+tb-vc
+td-yn
+";
+    assert_eq!(part2_greedy(input), "co,de,ka,ta");
 }
 
 #[cfg(test)]
@@ -171,6 +328,16 @@ fn test_part1_full() {
 }
 
 #[test]
-fn test_part2_full() {
-    assert_eq!(part2(FULL_INPUT), "am,au,be,cm,fo,ha,hh,im,nt,os,qz,rr,so");
+fn test_part2_orig_full() {
+    assert_eq!(part2_orig(FULL_INPUT), "am,au,be,cm,fo,ha,hh,im,nt,os,qz,rr,so");
+}
+
+#[test]
+fn test_part2_incremental_full() {
+    assert_eq!(part2_incremental(FULL_INPUT), "am,au,be,cm,fo,ha,hh,im,nt,os,qz,rr,so");
+}
+
+#[test]
+fn test_part2_greedy_full() {
+    assert_eq!(part2_greedy(FULL_INPUT), "am,au,be,cm,fo,ha,hh,im,nt,os,qz,rr,so");
 }
