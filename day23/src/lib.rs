@@ -1,10 +1,10 @@
 use std::collections::{HashMap, HashSet};
-use rustc_hash::FxHashSet;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 pub use part2_greedy as part2;
 
 pub fn part1(input: &str) -> usize {
-    let mut connections: HashMap<&str, HashSet<&str>> = HashMap::new();
+    let mut connections: FxHashMap<&str, FxHashSet<&str>> = FxHashMap::default();
     for line in input.lines() {
         let (left, right) = line.split_once('-').expect("hyphen");
         // Insert connections such that the strings point to "larger" strings
