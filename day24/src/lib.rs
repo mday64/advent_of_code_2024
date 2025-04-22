@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, mem::swap};
 use nom::{branch::alt, bytes::complete::tag, character::complete::{alphanumeric1, newline}, multi::many1, sequence::{delimited, separated_pair, terminated}, IResult, Parser};
 
 #[allow(clippy::upper_case_acronyms)]
@@ -113,9 +113,9 @@ pub fn part2(input: &str) -> String {
     // From manual inspection, bits 0..=8 are fine, and we have one swap
     // involving bit 9: "hnd" and "z09".
     // Note the z09 output was an AND, not an XOR
-    // let mut crossed_wires: Vec<String> = vec![];
+    let mut crossed_wires: Vec<String> = vec![];
 
-    let (_input, (_wires, gates)) = parse_input(input).expect("valid input");
+    let (_input, (_wires, mut gates)) = parse_input(input).expect("valid input");
     let gate = find_gate("x00", Operation::XOR, &gates);
     if gate.output != "z00" {
         println!("Swap: z00, {}", gate.output);
@@ -130,7 +130,13 @@ pub fn part2(input: &str) -> String {
         
         let ddd = find_gate(&x_str, Operation::XOR, &gates);
         let znn = *gates.iter().find(|g| g.output==z_str).unwrap();
-        assert!(znn.operation == Operation::XOR);
+        if znn.operation != Operation::XOR {
+            let other_out = find_gate(carry, Operation::XOR, &gates).output;
+            println!("{z_str} <-> {}", other_out);
+            swap_outputs(&z_str, other_out, &mut gates);
+            crossed_wires.push(z_str);
+            crossed_wires.push(other_out.to_string());
+        }
         assert!(znn.inputs.contains(&carry));
         assert!(znn.inputs.contains(&ddd.output));
         let fff = find_gate(carry, Operation::AND, &gates);
@@ -142,8 +148,10 @@ pub fn part2(input: &str) -> String {
         carry = ggg.output;
     }
     assert_eq!(carry, "z45");
-    
-    "World".to_string()
+    assert_eq!(crossed_wires.len(), 8);
+
+    crossed_wires.sort();
+    crossed_wires.join(",")
 }
 
 fn find_gate<'a>(src: &str, operation: Operation, gates: &[Gate<'a>]) -> Gate<'a> {
@@ -153,6 +161,21 @@ fn find_gate<'a>(src: &str, operation: Operation, gates: &[Gate<'a>]) -> Gate<'a
         }
     }
     panic!("gate not found!");
+}
+
+fn swap_outputs(wire1: &str, wire2: &str, gates: &mut [Gate]) {
+    let mut gate1 = None;
+    let mut gate2 = None;
+    for gate in gates.iter_mut() {
+        if gate.output == wire1 {
+            gate1 = Some(gate);
+        } else if gate.output == wire2 {
+            gate2 = Some(gate);
+        }
+    }
+    let gate1 = gate1.unwrap();
+    let gate2 = gate2.unwrap();
+    swap(&mut gate1.output, &mut gate2.output);
 }
 
 fn parse_wire(input: &str) -> IResult<&str, (&str, bool)> {
