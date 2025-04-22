@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use nom::{branch::alt, bytes::complete::tag, character::complete::{alphanumeric1, newline}, multi::many1, sequence::{delimited, separated_pair, terminated}, IResult, Parser};
 
 #[allow(clippy::upper_case_acronyms)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum Operation {
     AND, OR, XOR
 }
@@ -15,11 +16,23 @@ impl Operation {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 struct Gate<'a> {
     operation: Operation,
-    src1: &'a str,
-    src2: &'a str,
+    inputs: [&'a str; 2],
     output: &'a str
+}
+
+impl Gate<'_> {
+    #[allow(dead_code)]
+    fn print(&self) {
+        let op_str = match self.operation {
+            Operation::AND => "AND",
+            Operation::OR => "OR",
+            Operation::XOR => "XOR",
+        };
+        println!("{} {} {} -> {}", self.inputs[0], op_str, self.inputs[1], self.output);
+    }
 }
 
 pub fn part1(input: &str) -> u64 {
@@ -29,9 +42,9 @@ pub fn part1(input: &str) -> u64 {
     // Simulate all of the gates
     while !gates.is_empty() {
         gates.retain(|gate| {
-            if let Some(src1) = wires.get(gate.src1) {
-                if let Some(src2) = wires.get(gate.src2) {
-                    let output = gate.operation.evaluate(*src1, *src2);
+            if let Some(in0) = wires.get(gate.inputs[0]) {
+                if let Some(in1) = wires.get(gate.inputs[1]) {
+                    let output = gate.operation.evaluate(*in0, *in1);
                     wires.insert(gate.output, output);
                     return false;
                 }
@@ -39,7 +52,7 @@ pub fn part1(input: &str) -> u64 {
             true
         });
     }
-    
+
     // Construct the output value
     let mut result = 0;
     for bit in (0..64).rev() {
@@ -50,8 +63,96 @@ pub fn part1(input: &str) -> u64 {
     result
 }
 
-pub fn part2(_input: &str) -> String {
+//
+// The outputs from 4 pairs of gates need to be swapped in order to
+// turn the gates into a full adder.  (Our input adds 44-bit integers,
+// and produces a 45-bit output.)
+//
+// We could try to solve it by inspection of the input (i.e. by hand).
+//
+// We could try to brute force it by trying all combinations of 4 pairs
+// of gates.  There are 222 gates.  That would take far too long.
+//
+// We can try examining which outputs are wrong, see which gates are
+// involved in computing their value, and brute force try to find the
+// pairs.  This might make the problem tractable.
+//
+// It might be more efficient to work from least significant bits to
+// more significant bits (because of carries).  We can hope that we
+// need to swap at most one pair of gates for each new bit.
+//
+// I wonder if the input wire values we're given are enough to find
+// all of the errors, or if we need to exercise more input combinations.
+//
+// As I read the description, we don't need to change the names of any
+// gate inputs -- just outputs.  To add the low N bits, we need the
+// x{0..N} and y{0..N} inputs, will produce the z{0..=N} outputs, and
+// will produce a carry out.  Then the next bit will take that carry out
+// as a carry in, and produce a new carry out.  If the carry out from
+// bit N doesn't match the carry in to bit N+1, then we know that
+// the carry out name is wrong (and what it should be -- so we can
+// find the matching gate in the pair).
+//
+// If we assume that all of the outputs ("z..") will eventually get a
+// value, then the wire swaps are constrained, and probably limited to
+// swapping the outputs for two gates for a given bit number.
+//
+// For a single bit (not bit 0), there will be 5 gates:
+// (carry in: ccc)
+// xnn XOR ynn -> ddd   <- find this by inputs
+// ccc XOR ddd -> znn   <- find this by output?
+// xnn AND ynn -> eee   <- find this by inputs
+// ccc AND ddd -> fff   <- same inputs as znn output
+// eee OR fff -> ggg
+// (where ggg becomes the carry in to the next bit)
+//
+// When searching for a gate with xnn and ynn inputs, it is sufficient
+// to just look for one input being xnn.
+//
+pub fn part2(input: &str) -> String {
+    // From manual inspection, bits 0..=8 are fine, and we have one swap
+    // involving bit 9: "hnd" and "z09".
+    // Note the z09 output was an AND, not an XOR
+    // let mut crossed_wires: Vec<String> = vec![];
+
+    let (_input, (_wires, gates)) = parse_input(input).expect("valid input");
+    let gate = find_gate("x00", Operation::XOR, &gates);
+    if gate.output != "z00" {
+        println!("Swap: z00, {}", gate.output);
+        return "TODO".to_string();
+    }
+    let mut carry = find_gate("x00", Operation::AND, &gates).output;
+
+    for bit in 1..44 {
+        println!("Bit {bit}...");
+        let x_str = format!("x{bit:02}");
+        let z_str = format!("z{bit:02}");
+        
+        let ddd = find_gate(&x_str, Operation::XOR, &gates);
+        let znn = *gates.iter().find(|g| g.output==z_str).unwrap();
+        assert!(znn.operation == Operation::XOR);
+        assert!(znn.inputs.contains(&carry));
+        assert!(znn.inputs.contains(&ddd.output));
+        let fff = find_gate(carry, Operation::AND, &gates);
+        assert!(fff.inputs.contains(&ddd.output));
+        let eee = find_gate(&x_str, Operation::AND, &gates);
+        let ggg = find_gate(fff.output, Operation::OR, &gates);
+        assert!(ggg.inputs.contains(&eee.output));
+
+        carry = ggg.output;
+    }
+    assert_eq!(carry, "z45");
+    
     "World".to_string()
+}
+
+fn find_gate<'a>(src: &str, operation: Operation, gates: &[Gate<'a>]) -> Gate<'a> {
+    for gate in gates {
+        if gate.operation == operation && (gate.inputs.contains(&src)) {
+            return *gate;
+        }
+    }
+    panic!("gate not found!");
 }
 
 fn parse_wire(input: &str) -> IResult<&str, (&str, bool)> {
@@ -72,7 +173,8 @@ fn parse_op(input: &str) -> IResult<&str, Operation> {
 
 fn parse_gate(input: &str) -> IResult<&str, Gate> {
     let (input, (src1, operation, src2, _, output)) = (alphanumeric1, parse_op, alphanumeric1, tag(" -> "), alphanumeric1).parse(input)?;
-    Ok((input, Gate{operation, src1, src2, output}))
+    let inputs = [src1, src2];
+    Ok((input, Gate{operation, inputs, output}))
 }
 
 fn parse_input(input: &str) -> IResult<&str, (HashMap<&str, bool>, Vec<Gate>)> {
