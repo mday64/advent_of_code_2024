@@ -235,6 +235,7 @@ fn presses_for_directional_code(code: &str) -> String {
     result
 }
 
+#[allow(dead_code)]
 fn presses_for_code_brute(code: &str, num_robots: u32) -> String {
     let mut presses = presses_for_numeric_code(code);
     for _ in 0..num_robots {
@@ -265,6 +266,7 @@ fn num_presses_for_directional_code(code: String, num_robots: u32, cache: &mut H
     result
 }
 
+#[allow(dead_code)]
 fn num_presses_for_code(code: &str, num_robots: u32) -> usize {
     let mut cache = HashMap::new();
     let directional_code = presses_for_numeric_code(code);
