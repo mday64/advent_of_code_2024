@@ -109,6 +109,18 @@ pub fn part1(input: &str) -> u64 {
 // When searching for a gate with xnn and ynn inputs, it is sufficient
 // to just look for one input being xnn.
 //
+// TODO: I think we can solve this in a purely automated way, that doesn't
+// depend on inspection of the input, and me trying to deduce what swap
+// would fix the problem.
+//
+// The idea would be to test the correct operation of each bit, one at
+// a time.  That is supply the 8 possible combinations of inputs (x, y,
+// carry in) for a single bit, and verify that the output bit is set
+// correctly.  If not, find the gates with the given bit number as
+// input (x or y) or output (z).  Then gather all of the wires associated
+// with those gates, and try swapping each unique pair, until the
+// output is correct.
+//
 pub fn part2(input: &str) -> String {
     // From manual inspection, bits 0..=8 are fine, and we have one swap
     // involving bit 9: "hnd" and "z09".
@@ -123,25 +135,43 @@ pub fn part2(input: &str) -> String {
     }
     let mut carry = find_gate("x00", Operation::AND, &gates).output;
 
-    for bit in 1..44 {
-        println!("Bit {bit}...");
+    for bit in 1..=44 {
+        eprintln!("Bit {bit}...");
         let x_str = format!("x{bit:02}");
         let z_str = format!("z{bit:02}");
         
-        let ddd = find_gate(&x_str, Operation::XOR, &gates);
-        let znn = *gates.iter().find(|g| g.output==z_str).unwrap();
+        let mut znn = *gates.iter().find(|g| g.output==z_str).unwrap();
         if znn.operation != Operation::XOR {
-            let other_out = find_gate(carry, Operation::XOR, &gates).output;
-            println!("{z_str} <-> {}", other_out);
+            let mut other = find_gate(carry, Operation::XOR, &gates);
+            let other_out = other.output;
+            eprintln!("{z_str} <-> {}", other_out);
             swap_outputs(&z_str, other_out, &mut gates);
             crossed_wires.push(z_str);
             crossed_wires.push(other_out.to_string());
+            other.output = znn.output;
+            znn = other;
         }
         assert!(znn.inputs.contains(&carry));
+        // if !znn.inputs.contains(&ddd.output) && znn.inputs.contains(&eee.output) {
+            //     // Assume that ddd and eee are swapped
+            //     eprintln!("{} <-> {}", ddd.output, eee.output);
+            //     swap_outputs(ddd.output, eee.output, &mut gates);
+            //     swap(&mut ddd.output, &mut eee.output);
+            //     crossed_wires.push(ddd.output.to_string());
+            //     crossed_wires.push(eee.output.to_string());
+            // }
+        let mut ddd = find_gate(&x_str, Operation::XOR, &gates);
+        let mut eee = find_gate(&x_str, Operation::AND, &gates);
+        if !znn.inputs.contains(&ddd.output) && znn.inputs.contains(&eee.output) {
+            eprintln!("{} <-> {}", ddd.output, eee.output);
+            crossed_wires.push(ddd.output.to_string());
+            crossed_wires.push(eee.output.to_string());
+            swap_outputs(ddd.output, eee.output, &mut gates);
+            swap(&mut ddd.output, &mut eee.output);
+        }
         assert!(znn.inputs.contains(&ddd.output));
         let fff = find_gate(carry, Operation::AND, &gates);
         assert!(fff.inputs.contains(&ddd.output));
-        let eee = find_gate(&x_str, Operation::AND, &gates);
         let ggg = find_gate(fff.output, Operation::OR, &gates);
         assert!(ggg.inputs.contains(&eee.output));
 
@@ -278,10 +308,4 @@ tgd XOR rvg -> z12
 tnw OR pbm -> gnj
 ";
     assert_eq!(part1(input), 2024);
-}
-
-#[test]
-fn test_part2() {
-    let input = "Hello, World!";
-    assert_eq!(part2(input), "World");
 }
