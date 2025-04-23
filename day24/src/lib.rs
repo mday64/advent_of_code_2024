@@ -1,5 +1,13 @@
 use std::{collections::HashMap, mem::swap};
-use nom::{branch::alt, bytes::complete::tag, character::complete::{alphanumeric1, newline}, multi::many1, sequence::{delimited, separated_pair, terminated}, IResult, Parser};
+use nom::{
+    branch::alt,
+    bytes::complete::tag,
+    character::complete::{alphanumeric1, newline},
+    combinator::{all_consuming, value},
+    multi::many1,
+    sequence::{delimited, preceded, separated_pair, terminated},
+    IResult, Parser
+};
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -207,26 +215,31 @@ fn parse_wire(input: &str) -> IResult<&str, (&str, bool)> {
 }
 
 fn parse_op(input: &str) -> IResult<&str, Operation> {
-    let (input, op_str) = delimited(tag(" "), alt((tag("AND"), tag("OR"), tag("XOR"))), tag(" ")).parse(input)?;
-    match op_str {
-        "AND" => Ok((input, Operation::AND)),
-        "OR" => Ok((input, Operation::OR)),
-        "XOR" => Ok((input, Operation::XOR)),
-        _ => panic!("Invalid operation")
-    }
+    alt((
+        value(Operation::AND, tag("AND")),
+        value(Operation::OR,  tag("OR")),
+        value(Operation::XOR, tag("XOR"))
+    )).parse(input)
 }
 
 fn parse_gate(input: &str) -> IResult<&str, Gate> {
-    let (input, (src1, operation, src2, _, output)) = (alphanumeric1, parse_op, alphanumeric1, tag(" -> "), alphanumeric1).parse(input)?;
+    let (input, (src1, operation, src2, output)) = (
+        alphanumeric1,
+        delimited(tag(" "), parse_op, tag(" ")),
+        alphanumeric1,
+        preceded(tag(" -> "), alphanumeric1)
+    ).parse(input)?;
     let inputs = [src1, src2];
     Ok((input, Gate{operation, inputs, output}))
 }
 
 fn parse_input(input: &str) -> IResult<&str, (HashMap<&str, bool>, Vec<Gate>)> {
-    let (input, (wires, gates)) = separated_pair(
-        many1(terminated(parse_wire, newline)),
-        newline,
-        many1(terminated(parse_gate, newline)),
+    let (input, (wires, gates)) = all_consuming(
+        separated_pair(
+            many1(terminated(parse_wire, newline)),
+            newline,
+            many1(terminated(parse_gate, newline)),
+        )
     ).parse(input)?;
     Ok((input, (wires.into_iter().collect(), gates)))
 }
