@@ -136,7 +136,7 @@ pub fn part2(input: &str) -> String {
     let mut carry = find_gate("x00", Operation::AND, &gates).output;
 
     for bit in 1..=44 {
-        eprintln!("Bit {bit}...");
+        // eprintln!("Bit {bit}...");
         let x_str = format!("x{bit:02}");
         let z_str = format!("z{bit:02}");
         
@@ -144,7 +144,7 @@ pub fn part2(input: &str) -> String {
         if znn.operation != Operation::XOR {
             let mut other = find_gate(carry, Operation::XOR, &gates);
             let other_out = other.output;
-            eprintln!("{z_str} <-> {}", other_out);
+            // eprintln!("{z_str} <-> {}", other_out);
             swap_outputs(&z_str, other_out, &mut gates);
             crossed_wires.push(z_str);
             crossed_wires.push(other_out.to_string());
@@ -152,18 +152,10 @@ pub fn part2(input: &str) -> String {
             znn = other;
         }
         assert!(znn.inputs.contains(&carry));
-        // if !znn.inputs.contains(&ddd.output) && znn.inputs.contains(&eee.output) {
-            //     // Assume that ddd and eee are swapped
-            //     eprintln!("{} <-> {}", ddd.output, eee.output);
-            //     swap_outputs(ddd.output, eee.output, &mut gates);
-            //     swap(&mut ddd.output, &mut eee.output);
-            //     crossed_wires.push(ddd.output.to_string());
-            //     crossed_wires.push(eee.output.to_string());
-            // }
         let mut ddd = find_gate(&x_str, Operation::XOR, &gates);
         let mut eee = find_gate(&x_str, Operation::AND, &gates);
         if !znn.inputs.contains(&ddd.output) && znn.inputs.contains(&eee.output) {
-            eprintln!("{} <-> {}", ddd.output, eee.output);
+            // eprintln!("{} <-> {}", ddd.output, eee.output);
             crossed_wires.push(ddd.output.to_string());
             crossed_wires.push(eee.output.to_string());
             swap_outputs(ddd.output, eee.output, &mut gates);
@@ -308,4 +300,17 @@ tgd XOR rvg -> z12
 tnw OR pbm -> gnj
 ";
     assert_eq!(part1(input), 2024);
+}
+
+#[cfg(test)]
+static FULL_INPUT: &str = include_str!("../input.txt");
+
+#[test]
+fn test_part1_full() {
+    assert_eq!(part1(FULL_INPUT), 53190357879014);
+}
+
+#[test]
+fn test_part2_full() {
+    assert_eq!(part2(FULL_INPUT), "bks,hnd,nrn,tdv,tjp,z09,z16,z23");
 }
