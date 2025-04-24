@@ -1,4 +1,5 @@
 use std::{collections::HashMap, sync::LazyLock};
+use itertools::Itertools;
 
 //
 // There are three robots here.  Number one is typing on the numeric
@@ -88,24 +89,161 @@ pub fn part1(input: &str) -> usize {
 }
 
 //
-// Brute force.  Peak memory usage is about 100GB, during the last pass
-// for each line of input.
+// Part 2 is the same as part 1, but with 25 robots typing on directional
+// keypads (instead of 2 for part 1).
 //
-// The web site says my answer is too low.  Am I doing one too few passes?
-// I don't think so.  Part 1 has two robots pressing on directional pads,
-// and Part 2 has 25.  I think 25 passes is correct.  I modified this code
-// to loop 0..2, and it in fact generates the same answer as part 1.
-//
-fn part2_inner(input: &str, num_robots: u32) -> usize {
+fn part2_inner(input: &str, depth: u32) -> u64 {
     let mut cache = HashMap::new();
     input.lines().map(|line| {
-        let numeric_code = line.strip_suffix('A').unwrap().parse::<usize>().unwrap();
-        let directional_code = presses_for_numeric_code(line);
-        numeric_code * num_presses_for_directional_code(directional_code, num_robots, &mut cache)
+        let code = line.strip_suffix('A').unwrap().parse::<u64>().unwrap();
+        let seq = format!("A{line}");
+        code * seq.chars()
+            .tuple_windows()
+            .map(|(a,b)| num_presses_for_code(a, b, true, depth, &mut cache))
+            .sum::<u64>()
     }).sum()
 }
-pub fn part2(input: &str) -> usize {
+pub fn part2(input: &str) -> u64 {
     part2_inner(input, 25)
+}
+
+//
+// Return the ways to get from the `src` key to the `dest` key, and
+// press `dest`.  The result is one or more strings containing
+// directional keys.
+//
+fn ways_for_keys(src: char, dest: char, numeric: bool) -> Vec<String> {
+    let keypad = if numeric { &NUMERIC_KEYPAD } else { &DIRECTIONAL_KEYPAD };
+    let &(src_row, src_col) = keypad.get(&src).unwrap();
+    let &(dest_row, dest_col) = keypad.get(&dest).unwrap();
+
+    // Zig-zag is always suboptimal.  The only ways we care about are
+    // either vertical then horizontal, or horizontal then vertical.
+    let mut horizontal = String::new();
+    let mut vertical = String::new();
+    if dest_col > src_col {
+        for _ in src_col..dest_col {
+            horizontal.push('>');
+        }
+    } else if dest_col < src_col {
+        for _ in dest_col..src_col {
+            horizontal.push('<');
+        }
+    }
+    if dest_row > src_row {
+        for _ in src_row..dest_row {
+            vertical.push('v');
+        }
+    } else if dest_row < src_row {
+        for _ in dest_row..src_row {
+            vertical.push('^');
+        }
+    }
+
+    // We need to avoid moving over the missing spot on the keyboard.
+    if numeric {
+        if src_row == 3 && dest_col == 0 {
+            // Must go up, then left
+            vec![format!("{vertical}{horizontal}A")]
+        } else if src_col == 0 && dest_row == 3 {
+            // Must go right, then down
+            vec![format!("{horizontal}{vertical}A")]
+        } else if src_row == dest_row || src_col == dest_col {
+            // horizontal and/or vertical are empty, so there is only
+            // one combination
+            vec![format!("{vertical}{horizontal}A")]
+        } else {
+            vec![format!("{vertical}{horizontal}A"), format!("{horizontal}{vertical}A")]
+        }
+    } else {
+        if src_row == 0 && dest_col == 0 {
+            // Must go down, then left
+            vec![format!("{vertical}{horizontal}A")]
+        } else if src_col == 0 && dest_row == 0 {
+            // Must go right, then up
+            vec![format!("{horizontal}{vertical}A")]
+        } else if src_row == dest_row || src_col == dest_col {
+            // horizontal and/or vertical are empty, so there is only
+            // one combination
+            vec![format!("{vertical}{horizontal}A")]
+        } else {
+            vec![format!("{vertical}{horizontal}A"), format!("{horizontal}{vertical}A")]
+        }
+    }
+}
+
+#[test]
+fn test_ways_for_keys_numeric() {
+    assert_eq!(ways_for_keys('A', '4', true), ["^^<<A"]);
+    assert_eq!(ways_for_keys('7', '0', true), [">vvvA"]);
+    assert_eq!(ways_for_keys('A', '0', true), ["<A"]);
+    assert_eq!(ways_for_keys('0', '2', true), ["^A"]);
+    assert_eq!(ways_for_keys('2', '9', true), ["^^>A", ">^^A"]);
+    assert_eq!(ways_for_keys('9', 'A', true), ["vvvA"]);
+    assert_eq!(ways_for_keys('A', '9', true), ["^^^A"]);
+    assert_eq!(ways_for_keys('4', '6', true), [">>A"]);
+    assert_eq!(ways_for_keys('6', '4', true), ["<<A"]);
+}
+
+#[test]
+fn test_ways_for_keys_directional() {
+    assert_eq!(ways_for_keys('A', '<', false), ["v<<A"]);
+    assert_eq!(ways_for_keys('<', 'A', false), [">>^A"]);
+    assert_eq!(ways_for_keys('<', '^', false), [">^A"]);
+    assert_eq!(ways_for_keys('^', '<', false), ["v<A"]);
+    assert_eq!(ways_for_keys('A', 'v', false), ["v<A", "<vA"]);
+    assert_eq!(ways_for_keys('v', 'A', false), ["^>A", ">^A"]);
+    assert_eq!(ways_for_keys('^', '>', false), ["v>A", ">vA"]);
+    assert_eq!(ways_for_keys('>', '^', false), ["^<A", "<^A"]);
+    assert_eq!(ways_for_keys('<', '>', false), [">>A"]);
+    assert_eq!(ways_for_keys('>', '<', false), ["<<A"]);
+    assert_eq!(ways_for_keys('A', '>', false), ["vA"]);
+    assert_eq!(ways_for_keys('>', 'A', false), ["^A"]);
+}
+
+//
+// Return the number of key presses needed to go from key `src` to key
+// `dest`, and press `dest`.  `depth` is the number of remaining robots
+// in the chain.
+//
+fn num_presses_for_code(
+    src: char,
+    dest: char,
+    numeric: bool,
+    depth: u32,
+    cache: &mut HashMap<(char, char, bool, u32), u64>)
+    -> u64
+{
+    if let Some(&result) = cache.get(&(src, dest, numeric, depth)) {
+        return result;
+    }
+
+    if depth == 0 {
+        assert_eq!(numeric, false);
+        let result = ways_for_keys(src, dest, numeric).into_iter()
+            .map(|s| s.len())
+            .min()
+            .unwrap()
+            as u64;
+        cache.insert((src, dest, numeric, depth), result);
+        return result;
+    }
+
+    let result = ways_for_keys(src, dest, numeric).into_iter()
+        .map(|seq| {
+            let seq = format!("A{seq}");
+
+            seq.chars()
+                .tuple_windows()
+                .map(|(a, b)| num_presses_for_code(a, b, false, depth-1, cache))
+                .sum()
+        })
+        .min()
+        .unwrap();
+
+    cache.insert((src, dest, numeric, depth), result);
+
+    result
 }
 
 //
@@ -235,44 +373,6 @@ fn presses_for_directional_code(code: &str) -> String {
     result
 }
 
-#[allow(dead_code)]
-fn presses_for_code_brute(code: &str, num_robots: u32) -> String {
-    let mut presses = presses_for_numeric_code(code);
-    for _ in 0..num_robots {
-        presses = presses_for_directional_code(&presses);
-    }
-    presses
-}
-
-fn num_presses_for_directional_code(code: String, num_robots: u32, cache: &mut HashMap<(String, u32), usize>) -> usize {
-    if let Some(n) = cache.get(&(code.clone(), num_robots)) {
-        return *n;
-    }
-    if num_robots == 0 {
-        let len = code.len();
-        cache.insert((code, 0), len);
-        return len;
-    }
-
-    let presses = presses_for_directional_code(&code);
-
-    // Break `code` into a sequence of strings, each ending with "A".
-    let result = presses.split_inclusive('A')
-        .map(|s| num_presses_for_directional_code(s.to_owned(), num_robots-1, cache))
-        .sum();
-    
-    cache.insert((code, num_robots), result);
-
-    result
-}
-
-#[allow(dead_code)]
-fn num_presses_for_code(code: &str, num_robots: u32) -> usize {
-    let mut cache = HashMap::new();
-    let directional_code = presses_for_numeric_code(code);
-    num_presses_for_directional_code(directional_code, num_robots, &mut cache)
-}
-
 static NUMERIC_KEYPAD: LazyLock<HashMap<char, (Row, Col)>> = LazyLock::new(||
     HashMap::from([
         ('A', (3,2)),
@@ -364,75 +464,44 @@ fn test_part2_inner() {
 }
 
 #[test]
-fn test_presses_for_code_brute_456() {
+fn test_part2_for_code_brute_456() {
     let code = "456A";
-    assert_eq!(presses_for_code_brute(code, 0).len(), 12);
-    assert_eq!(presses_for_code_brute(code, 1).len(), 26);
-    assert_eq!(presses_for_code_brute(code, 2).len(), 64);
-    assert_eq!(presses_for_code_brute(code, 3).len(), 162);
-    assert_eq!(presses_for_code_brute(code, 4).len(), 394);
-    assert_eq!(presses_for_code_brute(code, 5).len(), 988);     // This fails.  I'm getting 994.
-    assert_eq!(presses_for_code_brute(code, 6).len(), 2434);
-    assert_eq!(presses_for_code_brute(code, 7).len(), 6082);
-    assert_eq!(presses_for_code_brute(code, 8).len(), 15090);
-    assert_eq!(presses_for_code_brute(code, 9).len(), 37576);
-    assert_eq!(presses_for_code_brute(code, 10).len(), 93444);
-    assert_eq!(presses_for_code_brute(code, 11).len(), 232450);
-    assert_eq!(presses_for_code_brute(code, 12).len(), 578314);
-    assert_eq!(presses_for_code_brute(code, 13).len(), 1438450);
-    assert_eq!(presses_for_code_brute(code, 14).len(), 3578646);
-    assert_eq!(presses_for_code_brute(code, 15).len(), 8901822);
-    assert_eq!(presses_for_code_brute(code, 16).len(), 22145084);
-    assert_eq!(presses_for_code_brute(code, 17).len(), 55087898);
-    assert_eq!(presses_for_code_brute(code, 18).len(), 137038728);
-    assert_eq!(presses_for_code_brute(code, 19).len(), 340900864);
-    assert_eq!(presses_for_code_brute(code, 20).len(), 848032810);
-    assert_eq!(presses_for_code_brute(code, 21).len(), 2109590876);
-    assert_eq!(presses_for_code_brute(code, 22).len(), 5247866716);
-    assert_eq!(presses_for_code_brute(code, 23).len(), 13054736520);
-    assert_eq!(presses_for_code_brute(code, 24).len(), 32475283854);
-    assert_eq!(presses_for_code_brute(code, 25).len(), 80786362258);
-}
-
-#[test]
-fn test_num_presses_for_code_456() {
-    let code = "456A";
-    assert_eq!(num_presses_for_code(code, 0), 12);
-    assert_eq!(num_presses_for_code(code, 1), 26);
-    assert_eq!(num_presses_for_code(code, 2), 64);
-    assert_eq!(num_presses_for_code(code, 3), 162);
-    assert_eq!(num_presses_for_code(code, 4), 394);
-    assert_eq!(num_presses_for_code(code, 5), 988);     // This fails.  I'm getting 994.
-    assert_eq!(num_presses_for_code(code, 6), 2434);
-    assert_eq!(num_presses_for_code(code, 7), 6082);
-    assert_eq!(num_presses_for_code(code, 8), 15090);
-    assert_eq!(num_presses_for_code(code, 9), 37576);
-    assert_eq!(num_presses_for_code(code, 10), 93444);
-    assert_eq!(num_presses_for_code(code, 11), 232450);
-    assert_eq!(num_presses_for_code(code, 12), 578314);
-    assert_eq!(num_presses_for_code(code, 13), 1438450);
-    assert_eq!(num_presses_for_code(code, 14), 3578646);
-    assert_eq!(num_presses_for_code(code, 15), 8901822);
-    assert_eq!(num_presses_for_code(code, 16), 22145084);
-    assert_eq!(num_presses_for_code(code, 17), 55087898);
-    assert_eq!(num_presses_for_code(code, 18), 137038728);
-    assert_eq!(num_presses_for_code(code, 19), 340900864);
-    assert_eq!(num_presses_for_code(code, 20), 848032810);
-    assert_eq!(num_presses_for_code(code, 21), 2109590876);
-    assert_eq!(num_presses_for_code(code, 22), 5247866716);
-    assert_eq!(num_presses_for_code(code, 23), 13054736520);
-    assert_eq!(num_presses_for_code(code, 24), 32475283854);
-    assert_eq!(num_presses_for_code(code, 25), 80786362258);
+    // assert_eq!(part2_inner(code, 0), 456 * 12);
+    assert_eq!(part2_inner(code, 1), 456 * 26);
+    assert_eq!(part2_inner(code, 2), 456 * 64);
+    assert_eq!(part2_inner(code, 3), 456 * 162);
+    assert_eq!(part2_inner(code, 4), 456 * 394);
+    assert_eq!(part2_inner(code, 5), 456 * 988);     // This fails.  I'm getting 994.
+    assert_eq!(part2_inner(code, 6), 456 * 2434);
+    assert_eq!(part2_inner(code, 7), 456 * 6082);
+    assert_eq!(part2_inner(code, 8), 456 * 15090);
+    assert_eq!(part2_inner(code, 9), 456 * 37576);
+    assert_eq!(part2_inner(code, 10), 456 * 93444);
+    assert_eq!(part2_inner(code, 11), 456 * 232450);
+    assert_eq!(part2_inner(code, 12), 456 * 578314);
+    assert_eq!(part2_inner(code, 13), 456 * 1438450);
+    assert_eq!(part2_inner(code, 14), 456 * 3578646);
+    assert_eq!(part2_inner(code, 15), 456 * 8901822);
+    assert_eq!(part2_inner(code, 16), 456 * 22145084);
+    assert_eq!(part2_inner(code, 17), 456 * 55087898);
+    assert_eq!(part2_inner(code, 18), 456 * 137038728);
+    assert_eq!(part2_inner(code, 19), 456 * 340900864);
+    assert_eq!(part2_inner(code, 20), 456 * 848032810);
+    assert_eq!(part2_inner(code, 21), 456 * 2109590876);
+    assert_eq!(part2_inner(code, 22), 456 * 5247866716);
+    assert_eq!(part2_inner(code, 23), 456 * 13054736520);
+    assert_eq!(part2_inner(code, 24), 456 * 32475283854);
+    assert_eq!(part2_inner(code, 25), 456 * 80786362258);
 }
 
 #[test]
 fn test_part2_others() {
     // My answers for all of these are too high
-    assert_eq!(num_presses_for_code("029A", 25), 82050061710);
-    assert_eq!(num_presses_for_code("980A", 25), 72242026390);
-    assert_eq!(num_presses_for_code("179A", 25), 81251039228);
-    assert_eq!(num_presses_for_code("456A", 25), 80786362258);
-    assert_eq!(num_presses_for_code("379A", 25), 77985628636);
+    assert_eq!(part2_inner("029A", 25), 29 * 82050061710);
+    assert_eq!(part2_inner("980A", 25), 980 * 72242026390);
+    assert_eq!(part2_inner("179A", 25), 179 * 81251039228);
+    assert_eq!(part2_inner("456A", 25), 456 * 80786362258);
+    assert_eq!(part2_inner("379A", 25), 379 * 77985628636);
 }
 
 #[cfg(test)]
@@ -446,6 +515,7 @@ fn test_part1_full() {
 #[test]
 fn test_part2_full() {
     let result = part2(FULL_INPUT);
-    assert!(result >  96_631_806_002_350);
-    assert!(result < 132_929_214_388_818);
+    assert!(result >    96_631_806_002_350);
+    assert_eq!(result, 116_821_732_384_052);
+    assert!(result <   132_929_214_388_818);
 }
