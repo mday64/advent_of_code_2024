@@ -515,7 +515,5 @@ fn test_part1_full() {
 #[test]
 fn test_part2_full() {
     let result = part2(FULL_INPUT);
-    assert!(result >    96_631_806_002_350);
     assert_eq!(result, 116_821_732_384_052);
-    assert!(result <   132_929_214_388_818);
 }
